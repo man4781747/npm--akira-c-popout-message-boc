@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { usePopoutMessage } from '@/components/popoutMessageBox/PopoutMessagePlugin'
+  import {usePopoutMessage} from 'akira-c-popout-message-box'
   const $notify = usePopoutMessage()
 </script>
 
