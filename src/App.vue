@@ -23,14 +23,13 @@
       <h4># main.js</h4>
           <pre><code class="language-js">import { createApp } from 'vue'
 import App from '@/App.vue'
-import PopoutMessagePlugin from '@/components/popoutMessageBox/PopoutMessagePlugin'
+import PopoutMessagePlugin from 'akira-c-popout-message-box'
 import 'bootstrap/dist/css/bootstrap.min.css'
-import 'bootstrap/dist/js/bootstrap.bundle.min.js'
 
 createApp(App).use(PopoutMessagePlugin).mount('#app')</code></pre>
           <h4># App.vue</h4>
         <pre><code class="language-html">&lt;script setup lang="ts">
-  import { usePopoutMessage } from '@/components/popoutMessageBox/PopoutMessagePlugin'
+  import {usePopoutMessage} from 'akira-c-popout-message-box'
   const $notify = usePopoutMessage()
 &lt;/script>
 
