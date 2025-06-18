@@ -21,7 +21,6 @@ npm install akira-c-popout-message-box
 import { createApp } from 'vue'
 import App from './App.vue'
 import PopoutMessagePlugin from 'akira-c-popout-message-box'
-import 'akira-c-popout-message-box/lib/popout-message-box.css'
 
 const app = createApp(App)
 app.use(PopoutMessagePlugin)
