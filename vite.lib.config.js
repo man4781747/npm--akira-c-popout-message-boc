@@ -33,7 +33,13 @@ export default defineConfig({
       output: {
         globals: {
           vue: 'Vue'
-        }
+        },
+        exports: 'named',
+        assetFileNames: (assetInfo) => {
+          if (assetInfo.name === 'style.css')
+            return 'popout-message-box.css';
+          return assetInfo.name;
+        },
       }
     }
   },

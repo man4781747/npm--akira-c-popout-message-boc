@@ -1,7 +1,7 @@
 {
   "name": "akira-c-popout-message-box",
   "private": false,
-  "version": "0.0.2",
+  "version": "0.0.7",
   "type": "module",
   "keywords": [
     "akira-c"
@@ -21,6 +21,10 @@
     ".": {
       "import": "./lib/popout-message-box.js",
       "require": "./lib/popout-message-box.umd.cjs"
+    },
+    "./lib/popout-message-box.css": {
+      "import": "./lib/popout-message-box.css",
+      "require": "./lib/popout-message-box.css"
     }
   },
   "dependencies": {

@@ -1,7 +1,9 @@
 import PopoutMessageBox from "../src/components/popoutMessageBox/popoutMessageBox.vue"
-import PopoutMessagePlugin from "../src/components/popoutMessageBox/PopoutMessagePlugin"
+import PopoutMessagePlugin, { usePopoutMessage } from "../src/components/popoutMessageBox/PopoutMessagePlugin"
+import 'bootstrap/dist/css/bootstrap.min.css'
+import '../src/style.css'
 
-export { PopoutMessageBox, PopoutMessagePlugin }
+export { PopoutMessageBox, PopoutMessagePlugin, usePopoutMessage }
 
 const components = [PopoutMessageBox]
 
@@ -13,5 +15,6 @@ const install = (App) => {
 }
 
 export default {
-  install
+  install,
+  usePopoutMessage
 }
