@@ -1,15 +1,16 @@
 {
   "name": "akira-c-popout-message-box",
   "private": false,
-  "version": "0.0.7",
+  "version": "0.0.8",
   "type": "module",
   "keywords": [
     "akira-c"
   ],
   "scripts": {
-    "dev": "vite --config vite.lib.config.js",
+    "dev:local": "set USE_BUILT_MODULE=false&& vite --config vite.demo.config.js",
     "build:lib": "vite build --config vite.lib.config.js",
     "build:demo": "vite build --config vite.demo.config.js",
+    "dev:built": "set USE_BUILT_MODULE=true&& npm run build:lib && vite --config vite.demo.config.js",
     "preview": "vite preview"
   },
   "files": [
