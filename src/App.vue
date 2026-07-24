@@ -24,7 +24,6 @@
           <pre><code class="language-js">import { createApp } from 'vue'
 import App from '@/App.vue'
 import PopoutMessagePlugin from 'akira-c-popout-message-box'
-import 'bootstrap/dist/css/bootstrap.min.css'
 
 createApp(App).use(PopoutMessagePlugin).mount('#app')</code></pre>
           <h4># App.vue</h4>
