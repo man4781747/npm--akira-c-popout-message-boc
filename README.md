@@ -1,5 +1,7 @@
 # akira-c-popout-message-box
 
+Version: 0.0.10
+
 English | [繁體中文](README.zh-TW.md)
 
 A Vue 3 popup message box component with multiple styles and 
@@ -21,11 +23,14 @@ npm install akira-c-popout-message-box
 import { createApp } from 'vue'
 import App from './App.vue'
 import PopoutMessagePlugin from 'akira-c-popout-message-box'
+import 'akira-c-popout-message-box/lib/popout-message-box.css'
 
 const app = createApp(App)
 app.use(PopoutMessagePlugin)
 app.mount('#app')
 ```
+
+> Note: The package publishes a `lib` directory. If you need styles, import `lib/popout-message-box.css`.
 
 ### Using in Components
 
@@ -35,23 +40,27 @@ import { usePopoutMessage } from 'akira-c-popout-message-box'
 
 const notify = usePopoutMessage()
 
-// Show success message
-notify.success('Operation Successful', 'Data has been saved', 5)
+// Show success message (default 5 seconds)
+notify.success('Operation Successful', 'Data has been saved')
 
-// Show error message
+// Show error message with custom lifetime (seconds)
 notify.error('Operation Failed', 'Please check your network connection', 7)
 
-// Show warning message
+// Other types
 notify.warning('Warning', 'This action cannot be undone', 5)
-
-// Show info message
 notify.info('System Notice', 'System maintenance tonight', 5)
-
-// Show primary message
 notify.primary('Important Notice', 'Please update your password', 5)
-
-// Show debug message
 notify.debug('Debug Info', 'API response time: 200ms', 3)
+
+// Set maximum number of messages displayed at the same time
+notify.setMaxItemNumber(6)
+
+// Get current max number
+const max = notify.getMaxItemNumber()
+
+// Read status
+// notify.status.count.value  -> current number of visible messages
+// notify.status.maxItemNumber.value -> configured maximum
 </script>
 ```
 
@@ -63,12 +72,18 @@ Each notification method accepts the following parameters:
 - `despString`: Description text (optional)
 - `lifeTime`: Display duration in seconds, defaults to 5 seconds (optional)
 
+## New in 0.0.10
+
+- Added API: `setMaxItemNumber(max)` and `getMaxItemNumber()` to set/get the maximum concurrently shown messages.
+- Exposed `status` object to read current count and max value.
+- Improved DOM removal flow and added internal `popout-removed` event for synchronized cleanup.
+
 ## Styles
 
 This component uses Bootstrap 5 styling system and supports the following message types:
 
 - `success`: Success message (green)
-- `error`: Error message (red)
+- `error` / `fail`: Error message (red)
 - `warning`: Warning message (yellow)
 - `info`: Information message (blue)
 - `primary`: Primary message (dark blue)
@@ -85,4 +100,4 @@ This component uses Bootstrap 5 styling system and supports the following messag
 
 ## License
 
-MIT License 
+MIT License
