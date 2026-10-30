@@ -1,70 +1,20 @@
-// 匯入 createApp 與 h 函數：
-// - createApp: 用來動態建立一個新的 Vue 應用（Component 實例）
-// - h: 是 Vue 的虛擬 DOM 建立函數 (hyperscript)，用於手動渲染元件
-import { render, createVNode  } from 'vue'
-// 匯入自定義的通知元件 PopoutMessageBox（彈出通知 UI）
-import PopoutMessageBox from '@/components/popoutMessageBox/popoutMessageBox.vue'
-// 匯入 uuid 套件來產生唯一 ID，避免 DOM 元素 ID 衝突，以及提供後續操作的依據
-import { v4 as uuidv4 } from 'uuid'
-
+// Vue 轉接層：把核心的狀態同步成 Vue ref，並提供與先前版本相同的服務介面
+// Vue adapter: syncs core state into Vue refs and keeps the same service interface as before
 import { ref } from 'vue'
+import { notify } from './popoutMessageCore'
 
-const count = ref(0)
+const count = ref(notify.getCount())
+const maxItemNumber = ref(notify.getMaxItemNumber())
 
-/* 
-  建立或取得通知用的容器（div#popout-message-box-list）
-  - 若已有該容器，直接回傳它；
-  - 若尚未建立，則建立新的 div 加入至 <body>
-*/
-import { getPopoutRootApp } from './PopoutMessagePlugin'
+notify.subscribe((state) => {
+  count.value = state.count
+  maxItemNumber.value = state.maxItemNumber
+})
 
-
-function createMessageBoxContainer(): HTMLElement {
-  let container = document.getElementById('popout-message-box-list')
-  if (!container) {
-    container = document.createElement('div')
-    container.id = 'popout-message-box-list'
-    document.body.appendChild(container)
-  }
-  return container
-}
-
-/*
-  建立單一通知訊息元件：
-  - messageType: 類型（如 success、error）
-  - mainString: 主訊息
-  - despString: 補充說明（可選）
-  - lifeTime: 存活秒數（預設 5 秒）
-*/
-const createMessage = (
-  messageType: string,
-  mainString: string,
-  despString?: string,
-  lifeTime: number = 5
-) => {
-  const container = createMessageBoxContainer()  // 確保通知容器存在
-  const tempID = uuidv4()   // 為每一個通知產生唯一的 ID
-  const tempDiv = document.createElement('div') // 為單一通知建立專屬 DOM 容器
-  tempDiv.id = tempID 
-  tempDiv.className = 'popout-message-box' // 套用樣式類別，可在 CSS 控制外觀
-
-  const vnode = createVNode(PopoutMessageBox, {
-    eleID: tempID,
-    messageType,
-    mainString,
-    despString: despString || '', // Ensure despString is not undefined
-    lifeTime,
-  })
-  // const app = getPopoutRootApp()
-  vnode.appContext = getPopoutRootApp()._context
-  render(vnode, tempDiv)
-  container.appendChild(tempDiv) // The original code used prepend, let's stick to that for consistency. container.prepend(tempDiv)
-  container.prepend(tempDiv) // 原本使用 appendChild，但根據先前邏輯使用 prepend：讓新通知出現在最上方
-}
-
-// 導出響應式狀態 
+// 導出響應式狀態（唯讀用途，請透過 setMaxItemNumber 修改上限）
 export const status = {
-  count
+  count,
+  maxItemNumber
 }
 
 // 定義 popoutMessage 所提供的方法介面：代表彈出訊息可使用的種類
@@ -78,28 +28,27 @@ export interface PopoutMessageMethods {
   warning: (mainString: string, despString?: string, lifeTime?: number) => void
   debug: (mainString: string, despString?: string, lifeTime?: number) => void
   primary: (mainString: string, despString?: string, lifeTime?: number) => void
+  setMaxItemNumber: (max: number) => void
+  getMaxItemNumber: () => number
   status: {
     count: typeof count,
+    maxItemNumber: typeof maxItemNumber,
   }
 }
 
 /*
   建立 popoutMessage 這個通知服務對象，實作 PopoutMessageMethods 介面
-  - 每種通知方法都是呼叫 createMessage 並指定對應的樣式類型
+  - 每種通知方法直接交給核心 notify 處理
   - 這些方法可透過 provide/inject 系統傳遞給整個應用使用
 */
 export const popoutMessage: PopoutMessageMethods = {
-  success: (mainString, despString, lifeTime) =>
-    createMessage('success', mainString, despString, lifeTime),
-  error: (mainString, despString, lifeTime) =>
-    createMessage('fail', mainString, despString, lifeTime), // 'fail' was used in popoutMessageBox.vue styling & old index.ts
-  info: (mainString, despString, lifeTime) =>
-    createMessage('info', mainString, despString, lifeTime),
-  warning: (mainString, despString, lifeTime) =>
-    createMessage('warning', mainString, despString, lifeTime),
-  debug: (mainString, despString, lifeTime) =>
-    createMessage('debug', mainString, despString, lifeTime),
-  primary: (mainString, despString, lifeTime) =>
-    createMessage('primary', mainString, despString, lifeTime),
+  success: notify.success,
+  error: notify.error,
+  info: notify.info,
+  warning: notify.warning,
+  debug: notify.debug,
+  primary: notify.primary,
+  setMaxItemNumber: notify.setMaxItemNumber,
+  getMaxItemNumber: notify.getMaxItemNumber,
   status: status,
 }

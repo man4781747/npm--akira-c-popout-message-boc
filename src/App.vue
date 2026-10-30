@@ -7,27 +7,44 @@
   <div class="d-flex justify-content-center align-items-center">
     <div class="container">
       <div class="row">
-      <h1>Popout Logs Show (count: {{ $notify.status.count  }})</h1>
-      <div class="col">
-        <div class="input-group mb-3">
-          <input type="text" class="form-control" v-model="logMsg" placeholder="you can type some message">
-          <button class="btn btn-success" @click="$notify.success(logMsg, 'Success log', 10)">Success log</button>
-          <button class="btn btn-danger" @click="$notify.error(logMsg, 'Error log', 10)">Error/Fail log</button>
-          <button class="btn btn-info" @click="$notify.info(logMsg, 'Info log', 10)">Info log</button>
-          <button class="btn btn-warning" @click="$notify.warning(logMsg, 'Waring log', 10)">Warning log</button>
-          <button class="btn btn-secondary" @click="$notify.debug(logMsg, 'Debug log', 10)">Debug log</button>
-          <button class="btn btn-primary" @click="$notify.primary(logMsg, 'Primary log', 10)">Primary log</button>
+        <h1>Popout Logs Show (count: {{ $notify.status.count  }}/{{ $notify.status.maxItemNumber }})</h1>
+        <div class="col-12">
+          <div class="input-group mb-3">
+            <input type="text" class="form-control" v-model="logMsg" placeholder="you can type some message">
+            <button class="btn btn-success" @click="$notify.success(logMsg, 'Success log', 10)">Success log</button>
+            <button class="btn btn-danger" @click="$notify.error(logMsg, 'Error log', 10)">Error/Fail log</button>
+            <button class="btn btn-info" @click="$notify.info(logMsg, 'Info log', 10)">Info log</button>
+            <button class="btn btn-warning" @click="$notify.warning(logMsg, 'Waring log', 10)">Warning log</button>
+            <button class="btn btn-secondary" @click="$notify.debug(logMsg, 'Debug log', 10)">Debug log</button>
+            <button class="btn btn-primary" @click="$notify.primary(logMsg, 'Primary log', 10)">Primary log</button>
+          </div>
         </div>
       </div>
-
-      <h4># main.js</h4>
-          <pre><code class="language-js">import { createApp } from 'vue'
+      <div class="row">
+        <div class="col-12">
+          <div class="input-group mb-3">
+            <span class="input-group-text">Max Item Number</span>
+            <input type="number" class="form-control" v-model.number="maxItemNumber" @change="$notify.setMaxItemNumber(maxItemNumber)" min="1" max="10">
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-12">
+          <h4># main.ts</h4>
+        </div>
+      </div>
+      <div class="row">
+        <pre v-pre><code class="language-js">import { createApp } from 'vue'
 import App from '@/App.vue'
 import PopoutMessagePlugin from 'akira-c-popout-message-box'
 
 createApp(App).use(PopoutMessagePlugin).mount('#app')</code></pre>
-          <h4># App.vue</h4>
-        <pre><code class="language-html">&lt;script setup lang="ts">
+      </div>
+      <div class="row">
+        <h4># App.vue</h4>
+      </div>
+      <div class="row">
+        <pre v-pre><code class="language-html">&lt;script setup lang="ts">
   import {usePopoutMessage} from 'akira-c-popout-message-box'
   const $notify = usePopoutMessage()
 &lt;/script>
@@ -36,19 +53,27 @@ createApp(App).use(PopoutMessagePlugin).mount('#app')</code></pre>
   &lt;div class="d-flex justify-content-center align-items-center">
     &lt;div class="container">
       &lt;div class="row">
-      &lt;h1>Popout Logs Show (count: {{ $notify.status.count  }})&lt;/h1>
-      &lt;div class="col">
-        &lt;div class="input-group mb-3">
-          &lt;input type="text" class="form-control" v-model="logMsg" placeholder="you can type some message">
-          &lt;button class="btn btn-success" @click="$notify.success(logMsg, 'Success log', 10)">Success log&lt;/button>
-          &lt;button class="btn btn-danger" @click="$notify.error(logMsg, 'Error log', 10)">Error/Fail log&lt;/button>
-          &lt;button class="btn btn-info" @click="$notify.info(logMsg, 'Info log', 10)">Info log&lt;/button>
-          &lt;button class="btn btn-warning" @click="$notify.warning(logMsg, 'Waring log', 10)">Warning log&lt;/button>
-          &lt;button class="btn btn-secondary" @click="$notify.debug(logMsg, 'Debug log', 10)">Debug log&lt;/button>
-          &lt;button class="btn btn-primary" @click="$notify.primary(logMsg, 'Primary log', 10)">Primary log&lt;/button>
+        &lt;h1>Popout Logs Show (count: {{ $notify.status.count  }}/{{ $notify.status.maxItemNumber }})&lt;/h1>
+        &lt;div class="col-12">
+          &lt;div class="input-group mb-3">
+            &lt;input type="text" class="form-control" v-model="logMsg" placeholder="you can type some message">
+            &lt;button class="btn btn-success" @click="$notify.success(logMsg, 'Success log', 10)">Success log&lt;/button>
+            &lt;button class="btn btn-danger" @click="$notify.error(logMsg, 'Error log', 10)">Error/Fail log&lt;/button>
+            &lt;button class="btn btn-info" @click="$notify.info(logMsg, 'Info log', 10)">Info log&lt;/button>
+            &lt;button class="btn btn-warning" @click="$notify.warning(logMsg, 'Waring log', 10)">Warning log&lt;/button>
+            &lt;button class="btn btn-secondary" @click="$notify.debug(logMsg, 'Debug log', 10)">Debug log&lt;/button>
+            &lt;button class="btn btn-primary" @click="$notify.primary(logMsg, 'Primary log', 10)">Primary log&lt;/button>
+          &lt;/div>
         &lt;/div>
       &lt;/div>
-    &lt;/div>
+      &lt;div class="row">
+        &lt;div class="col-12">
+          &lt;div class="input-group mb-3">
+            &lt;span class="input-group-text">Max Item Number&lt;/span>
+            &lt;input type="number" class="form-control" v-model.number="maxItemNumber" @change="$notify.setMaxItemNumber(maxItemNumber)" min="1" max="10">
+          &lt;/div>
+        &lt;/div>
+      &lt;/div>
     &lt;/div>
   &lt;/div>
 &lt;/template>
@@ -58,24 +83,26 @@ export default {
   name: 'App',
   data() {
     return {
-      logMsg: ""
+      logMsg: "",
+      maxItemNumber: 10
     };
   },
 }
-&lt;/script>
-</code></pre>
-    </div>
+&lt;/script></code></pre>
+      </div>
     </div>
   </div>
 </template>
 
 <script lang="ts">
+
 export default {
   name: 'App',
   components: {}, // PopoutCard is registered globally or locally if this were a real app build
   data() {
     return {
-      logMsg: ""
+      logMsg: "",
+      maxItemNumber: 10
     };
   },
 }

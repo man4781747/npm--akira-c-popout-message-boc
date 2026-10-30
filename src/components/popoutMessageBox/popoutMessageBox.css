@@ -23,7 +23,7 @@
     &:hover {
       opacity: 1;
     }
-    & .card {
+    & .popout-card {
       position: relative;
       display: flex;
       flex-direction: column;
@@ -38,37 +38,37 @@
       border-width: 0px;
       border-left-width: 5px;
       transition: all 0.5s;
-      &.success {
+      &.popout-card--success {
         border-color: var(--bs-green, #198754);
       }
-      &.fail {
+      &.popout-card--fail {
         border-color: var(--bs-red, #dc3545);
       }
-      &.info {
+      &.popout-card--info {
         border-color: #289dc9;
       }
-      &.warning {
+      &.popout-card--warning {
         border-color: var(--bs-warning, #ffc107);
       }
-      &.primary {
+      &.popout-card--primary {
         border-color: var(--bs-primary, #0d6efd);
       }
-      &.debug {
+      &.popout-card--debug {
         border-color: var(--bs-secondary, #6c757d);
       }
       margin-bottom: 8px;
 
-      & .card-body {
+      & .popout-card__body {
         flex: 1 1 auto;
         padding: 1rem;
-        & .card-title {
+        & .popout-card__title {
           font-size: 1rem;
           font-weight: bold;
           letter-spacing: 0.0125em;
           border: 0;
           margin: 0;
         }
-        & .card-desp {
+        & .popout-card__desp {
           font-size: 0.8rem;
           letter-spacing: 0.0125em;
           border: 0;
@@ -78,41 +78,41 @@
     }
   }
 
-  .when-create-leave-active,
-  .when-create-enter-active {
+  .popout-slide-leave-active,
+  .popout-slide-enter-active {
     transition: all 0.5s ease;
     transform: translateX(0%) translateY(0px);
     margin-bottom: 8px;
   }
 
-  .when-create-enter-from {
+  .popout-slide-enter-from {
     background-color: rgba(0, 0, 0, 0);
     transform: translateX(120%) translateY(0px);
     height: 0px;
     margin-bottom: 0px;
   }
 
-  .when-create-leave-to {
+  .popout-slide-leave-to {
     background-color: rgba(0, 0, 0, 0);
     transform: translateX(114%) translateY(-4px);
     height: 0px;
     margin-bottom: 0px;
   }
 
-  .time-mask {
+  .popout-card__time-mask {
     position: absolute;
     left: 0;
     top: 0;
     bottom: 0;
     right: 100%;
     background-color: rgba(0, 0, 0, 0.1);
-    &.stop {
+    &.popout-card__time-mask--stop {
       animation-play-state: paused !important;
     }
   }
 }
 
-@keyframes time_mask_anime {
+@keyframes popout-time-mask {
   from {
     right: 100%;
   }

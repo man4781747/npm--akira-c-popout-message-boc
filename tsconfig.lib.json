@@ -1,0 +1,17 @@
+{
+  // 僅供 build:lib 產生型別宣告（.d.ts）使用
+  // Used only by build:lib to generate type declarations (.d.ts)
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "preserve"
+  },
+  "include": [
+    "packages/**/*.ts",
+    "src/env.d.ts",
+    "src/components/**/*.ts",
+    "src/components/**/*.vue"
+  ]
+}
