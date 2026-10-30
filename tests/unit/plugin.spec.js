@@ -3,6 +3,28 @@ import { createApp } from 'vue'
 import { vueTargets, setup, boxes, flush } from './helpers.js'
 
 describe.each(vueTargets)('Plugin 註冊 — $name', (target) => {
+  // 以 app.use(plugin, options) 安裝並回傳模組
+  async function installWith(plugin, options) {
+    vi.resetModules()
+    document.body.innerHTML = ''
+    const mod = await target.load()
+    createApp({ render: () => null }).use(plugin(mod), options).mount(document.createElement('div'))
+    return mod
+  }
+
+  it.each([
+    ['default', (mod) => mod.default],
+    ['PopoutMessagePlugin', (mod) => mod.PopoutMessagePlugin],
+  ])('app.use(%s, options) 套用設定', async (_, plugin) => {
+    const mod = await installWith(plugin, { max: 5, duration: 3, position: 'bottom-right' })
+
+    expect(mod.notify.getConfig()).toEqual({ max: 5, duration: 3, position: 'bottom-right' })
+  })
+
+  it('app.use 帶入不合法的設定時拋出 RangeError', async () => {
+    await expect(installWith((mod) => mod.default, { position: 'middle' })).rejects.toThrow(RangeError)
+  })
+
   it('匯出 default、PopoutMessagePlugin、usePopoutMessage、notify', async () => {
     const { mod } = await setup(target)
 

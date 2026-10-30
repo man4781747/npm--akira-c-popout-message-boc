@@ -3,6 +3,8 @@
   top: 3rem;
   right: 0;
   z-index: 99999;
+  display: flex;
+  flex-direction: column;
   margin: 0.5rem;
   max-width: 400px;
   max-height: calc(100vh - 3rem - 8px);
@@ -10,6 +12,38 @@
   overflow-y: auto;
   &::-webkit-scrollbar {
     width: 4px;
+  }
+
+  /* 顯示位置（預設 top-right）；下方位置時新訊息顯示在最下面 */
+  &.popout-position--top-left {
+    right: auto;
+    left: 0;
+  }
+  /* 置中時去掉左右 margin，否則 left: 50% 會從 margin 外緣起算而偏移 */
+  &.popout-position--top-center {
+    right: auto;
+    left: 50%;
+    margin-left: 0;
+    margin-right: 0;
+    transform: translateX(-50%);
+  }
+  &.popout-position--bottom-left,
+  &.popout-position--bottom-center,
+  &.popout-position--bottom-right {
+    top: auto;
+    bottom: 0;
+    flex-direction: column-reverse;
+  }
+  &.popout-position--bottom-left {
+    right: auto;
+    left: 0;
+  }
+  &.popout-position--bottom-center {
+    right: auto;
+    left: 50%;
+    margin-left: 0;
+    margin-right: 0;
+    transform: translateX(-50%);
   }
   & .popout-message-box {
     min-width: 10rem;
@@ -97,6 +131,25 @@
     transform: translateX(114%) translateY(-4px);
     height: 0px;
     margin-bottom: 0px;
+  }
+
+  /* 靠左時由左側滑入、滑出；置中時改為淡入、淡出 */
+  &.popout-position--top-left,
+  &.popout-position--bottom-left {
+    & .popout-slide-enter-from {
+      transform: translateX(-120%) translateY(0px);
+    }
+    & .popout-slide-leave-to {
+      transform: translateX(-114%) translateY(-4px);
+    }
+  }
+  &.popout-position--top-center,
+  &.popout-position--bottom-center {
+    & .popout-slide-enter-from,
+    & .popout-slide-leave-to {
+      transform: none;
+      opacity: 0;
+    }
   }
 
   .popout-card__time-mask {

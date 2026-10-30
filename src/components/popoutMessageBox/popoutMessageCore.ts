@@ -9,7 +9,39 @@ const REMOVE_DELAY = 2000
 // 進場後多久把卡片高度固定為實際高度（讓關閉時的高度收合有動畫）
 const MEASURE_DELAY = 100
 
-export type MessageType = 'success' | 'fail' | 'info' | 'warning' | 'primary' | 'debug'
+export type MessageType = 'success' | 'error' | 'info' | 'warning' | 'debug' | 'primary'
+
+export type Position =
+  | 'top-left'
+  | 'top-center'
+  | 'top-right'
+  | 'bottom-left'
+  | 'bottom-center'
+  | 'bottom-right'
+
+export interface PopoutMessageOptions {
+  /** 同時顯示的訊息上限，預設 10 */
+  max?: number
+  /** 未指定 lifeTime 時的顯示秒數，預設 5；0 代表不自動關閉 */
+  duration?: number
+  /** 顯示位置，預設 'top-right' */
+  position?: Position
+}
+
+export interface MessageUpdate {
+  mainString?: string
+  despString?: string
+  type?: MessageType
+  /** 新的顯示秒數（0 代表不自動關閉）；不論是否指定，update 後都會重新計時 */
+  lifeTime?: number
+}
+
+export interface MessageHandle {
+  /** 立即開始關閉這則訊息 */
+  close: () => void
+  /** 修改這則訊息並重新計時；已開始關閉的訊息不會有任何變化 */
+  update: (changes: MessageUpdate) => void
+}
 
 export interface PopoutMessageState {
   /** 目前顯示中（尚未開始關閉）的訊息數 */
@@ -21,12 +53,18 @@ export interface PopoutMessageState {
 export type PopoutMessageListener = (state: PopoutMessageState) => void
 
 export interface PopoutMessageCore {
-  success: (mainString: string, despString?: string, lifeTime?: number) => void
-  error: (mainString: string, despString?: string, lifeTime?: number) => void
-  info: (mainString: string, despString?: string, lifeTime?: number) => void
-  warning: (mainString: string, despString?: string, lifeTime?: number) => void
-  debug: (mainString: string, despString?: string, lifeTime?: number) => void
-  primary: (mainString: string, despString?: string, lifeTime?: number) => void
+  /** lifeTime 單位為秒，省略時使用 duration 設定；0 代表不自動關閉 */
+  success: (mainString: string, despString?: string, lifeTime?: number) => MessageHandle
+  error: (mainString: string, despString?: string, lifeTime?: number) => MessageHandle
+  info: (mainString: string, despString?: string, lifeTime?: number) => MessageHandle
+  warning: (mainString: string, despString?: string, lifeTime?: number) => MessageHandle
+  debug: (mainString: string, despString?: string, lifeTime?: number) => MessageHandle
+  primary: (mainString: string, despString?: string, lifeTime?: number) => MessageHandle
+  /** 關閉所有顯示中的訊息 */
+  clear: () => void
+  /** 修改設定，只套用有傳入的欄位；不合法的值拋出 RangeError */
+  configure: (options: PopoutMessageOptions) => void
+  getConfig: () => Required<PopoutMessageOptions>
   setMaxItemNumber: (max: number) => void
   getMaxItemNumber: () => number
   getCount: () => number
@@ -34,17 +72,60 @@ export interface PopoutMessageCore {
   subscribe: (listener: PopoutMessageListener) => () => void
 }
 
-interface MessageItem {
-  close: () => void
+const POSITIONS: Position[] = [
+  'top-left',
+  'top-center',
+  'top-right',
+  'bottom-left',
+  'bottom-center',
+  'bottom-right',
+]
+
+// error() 對應的 class 沿用 popout-card--fail
+const TYPE_CLASS: Record<MessageType, string> = {
+  success: 'popout-card--success',
+  error: 'popout-card--fail',
+  info: 'popout-card--info',
+  warning: 'popout-card--warning',
+  debug: 'popout-card--debug',
+  primary: 'popout-card--primary',
 }
 
 // 顯示中（尚未開始關閉）的訊息，最舊的在前
-const openItems: MessageItem[] = []
+const openItems: MessageHandle[] = []
 const listeners = new Set<PopoutMessageListener>()
-let maxItemNumber = 10
+const config: Required<PopoutMessageOptions> = {
+  max: 10,
+  duration: 5,
+  position: 'top-right',
+}
+
+function assertMax(max: unknown) {
+  if (!Number.isInteger(max) || (max as number) < 1) {
+    throw new RangeError(`maxItemNumber 必須是大於等於 1 的整數，收到：${max}`)
+  }
+}
+
+function assertSeconds(value: unknown, name: string) {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+    throw new RangeError(`${name} 必須是大於等於 0 的數字，收到：${value}`)
+  }
+}
+
+function assertPosition(position: unknown) {
+  if (!POSITIONS.includes(position as Position)) {
+    throw new RangeError(`position 必須是 ${POSITIONS.join(' / ')} 其中之一，收到：${position}`)
+  }
+}
+
+function assertType(type: unknown) {
+  if (!Object.prototype.hasOwnProperty.call(TYPE_CLASS, type as string)) {
+    throw new RangeError(`type 必須是 ${Object.keys(TYPE_CLASS).join(' / ')} 其中之一，收到：${type}`)
+  }
+}
 
 function getState(): PopoutMessageState {
-  return { count: openItems.length, maxItemNumber }
+  return { count: openItems.length, maxItemNumber: config.max }
 }
 
 function emitChange() {
@@ -60,6 +141,10 @@ function ensureStyle() {
   document.head.appendChild(style)
 }
 
+function applyPosition(container: HTMLElement) {
+  container.className = `popout-position--${config.position}`
+}
+
 function ensureContainer(): HTMLElement {
   let container = document.getElementById(CONTAINER_ID)
   if (!container) {
@@ -67,6 +152,7 @@ function ensureContainer(): HTMLElement {
     container.id = CONTAINER_ID
     document.body.appendChild(container)
   }
+  applyPosition(container)
   return container
 }
 
@@ -99,7 +185,7 @@ function playTransition(el: HTMLElement, phase: 'enter' | 'leave') {
 
 // 超過上限時，從最舊的開始關閉
 function removeOverflowItems() {
-  while (openItems.length > maxItemNumber) {
+  while (openItems.length > config.max) {
     openItems[0].close()
   }
 }
@@ -108,57 +194,109 @@ function createMessage(
   messageType: MessageType,
   mainString: string,
   despString: string = '',
-  lifeTime: number = 5
-) {
+  lifeTime: number = config.duration
+): MessageHandle {
+  assertSeconds(lifeTime, 'lifeTime')
   ensureStyle()
   const container = ensureContainer()
 
   const box = createElement('popout-message-box')
-  const card = createElement(`popout-card popout-card--${messageType}`)
+  const card = createElement(`popout-card ${TYPE_CLASS[messageType]}`)
   const mask = createElement('popout-card__time-mask')
-  mask.style.animation = `popout-time-mask ${lifeTime}s linear forwards`
+  const title = createElement('popout-card__title', mainString)
+  const desp = createElement('popout-card__desp', despString)
   const body = createElement('popout-card__body')
-  body.append(
-    createElement('popout-card__title', mainString),
-    createElement('popout-card__desp', despString)
-  )
+  body.append(title, desp)
   card.append(mask, body)
   box.append(card)
-  container.prepend(box) // 新通知出現在最上方
+  container.prepend(box) // DOM 中新通知在最前面（下方位置時由 CSS 反轉成顯示在最下面）
 
-  let remaining = lifeTime * 1000
-  let startTime = Date.now()
+  let currentType = messageType
+  let remaining = 0
+  let startTime = 0
   let timer: number | null = null
+  let autoClose = true
+  let hovering = false
+  let measured = false
   let closing = false
 
-  const pause = () => {
+  const stopTimer = () => {
     if (timer === null) return
     clearTimeout(timer)
     timer = null
     remaining -= Date.now() - startTime
+  }
+
+  const startTimer = () => {
+    startTime = Date.now()
+    timer = window.setTimeout(close, remaining)
+  }
+
+  // 以 seconds 秒重新開始倒數（0 代表不自動關閉），並重播倒數遮罩動畫
+  const restartCountdown = (seconds: number) => {
+    if (timer !== null) clearTimeout(timer)
+    timer = null
+    autoClose = seconds > 0
+    remaining = seconds * 1000
+    mask.hidden = !autoClose
+    mask.style.animation = 'none'
+    void mask.offsetWidth // 強制 reflow，讓同名動畫能重新開始
+    mask.style.animation = autoClose ? `popout-time-mask ${seconds}s linear forwards` : ''
+    mask.classList.toggle('popout-card__time-mask--stop', hovering)
+    if (autoClose && !hovering) startTimer()
+  }
+
+  // 把卡片高度固定為實際高度，讓關閉時的高度收合有動畫
+  const measure = () => {
+    card.style.height = ''
+    card.style.height = `${card.offsetHeight}px`
+    measured = true
+  }
+
+  const pause = () => {
+    hovering = true
+    if (timer === null) return
+    stopTimer()
     mask.classList.add('popout-card__time-mask--stop')
   }
 
   const resume = () => {
-    // 已在關閉中就不再重新計時，避免重複關閉
-    if (closing || timer !== null) return
-    startTime = Date.now()
-    timer = window.setTimeout(close, remaining)
+    hovering = false
+    // 已在關閉中、已在計時、或不自動關閉時都不重新計時
+    if (closing || timer !== null || !autoClose) return
+    startTimer()
     mask.classList.remove('popout-card__time-mask--stop')
   }
 
   const close = () => {
     if (closing) return
     closing = true
-    pause()
-    openItems.splice(openItems.indexOf(item), 1)
+    stopTimer()
+    openItems.splice(openItems.indexOf(handle), 1)
     card.style.height = '0px'
     playTransition(card, 'leave')
     emitChange()
     setTimeout(() => box.remove(), REMOVE_DELAY)
   }
 
-  const item: MessageItem = { close }
+  const update = (changes: MessageUpdate) => {
+    if (closing) return
+    if (changes.type !== undefined) assertType(changes.type)
+    if (changes.lifeTime !== undefined) assertSeconds(changes.lifeTime, 'lifeTime')
+
+    if (changes.mainString !== undefined) title.textContent = changes.mainString
+    if (changes.despString !== undefined) desp.textContent = changes.despString
+    if (changes.type !== undefined) {
+      card.classList.replace(TYPE_CLASS[currentType], TYPE_CLASS[changes.type])
+      currentType = changes.type
+    }
+    if (changes.lifeTime !== undefined) lifeTime = changes.lifeTime
+    // 進場量測前不量（進場動畫中高度為 0），之後內容變動需重新量測
+    if (measured) measure()
+    restartCountdown(lifeTime)
+  }
+
+  const handle: MessageHandle = { close, update }
 
   card.addEventListener('mouseenter', pause)
   card.addEventListener('mouseleave', resume)
@@ -166,13 +304,14 @@ function createMessage(
 
   playTransition(card, 'enter')
   setTimeout(() => {
-    if (!closing) card.style.height = `${box.offsetHeight}px`
+    if (!closing) measure()
   }, MEASURE_DELAY)
-  timer = window.setTimeout(close, remaining)
+  restartCountdown(lifeTime)
 
-  openItems.push(item)
+  openItems.push(handle)
   removeOverflowItems()
   emitChange()
+  return handle
 }
 
 /** 通知服務（單例），所有入口共用同一份狀態 */
@@ -180,7 +319,7 @@ export const notify: PopoutMessageCore = {
   success: (mainString, despString, lifeTime) =>
     createMessage('success', mainString, despString, lifeTime),
   error: (mainString, despString, lifeTime) =>
-    createMessage('fail', mainString, despString, lifeTime),
+    createMessage('error', mainString, despString, lifeTime),
   info: (mainString, despString, lifeTime) =>
     createMessage('info', mainString, despString, lifeTime),
   warning: (mainString, despString, lifeTime) =>
@@ -189,15 +328,31 @@ export const notify: PopoutMessageCore = {
     createMessage('debug', mainString, despString, lifeTime),
   primary: (mainString, despString, lifeTime) =>
     createMessage('primary', mainString, despString, lifeTime),
-  setMaxItemNumber: (max) => {
-    if (!Number.isInteger(max) || max < 1) {
-      throw new RangeError(`maxItemNumber 必須是大於等於 1 的整數，收到：${max}`)
+  clear: () => {
+    ;[...openItems].forEach((item) => item.close())
+  },
+  configure: (options) => {
+    // 全部驗證通過才套用，避免只套用一部分
+    if (options.max !== undefined) assertMax(options.max)
+    if (options.duration !== undefined) assertSeconds(options.duration, 'duration')
+    if (options.position !== undefined) assertPosition(options.position)
+
+    if (options.duration !== undefined) config.duration = options.duration
+    if (options.position !== undefined) {
+      config.position = options.position
+      // 容器尚未建立（或在 SSR 中）時，等第一次顯示訊息才套用
+      const container = typeof document !== 'undefined' ? document.getElementById(CONTAINER_ID) : null
+      if (container) applyPosition(container)
     }
-    maxItemNumber = max
-    removeOverflowItems()
+    if (options.max !== undefined) {
+      config.max = options.max
+      removeOverflowItems()
+    }
     emitChange()
   },
-  getMaxItemNumber: () => maxItemNumber,
+  getConfig: () => ({ ...config }),
+  setMaxItemNumber: (max) => notify.configure({ max }),
+  getMaxItemNumber: () => config.max,
   getCount: () => openItems.length,
   subscribe: (listener) => {
     listeners.add(listener)

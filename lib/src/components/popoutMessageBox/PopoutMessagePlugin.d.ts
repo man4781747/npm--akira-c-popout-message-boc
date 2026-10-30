@@ -1,8 +1,9 @@
 import { App, InjectionKey } from 'vue';
 import { PopoutMessageMethods } from './popoutMessageService';
+import { PopoutMessageOptions } from './popoutMessageCore';
 export declare const PopoutMessageInjectionKey: InjectionKey<PopoutMessageMethods>;
 declare const _default: {
-    install: (app: App) => void;
+    install: (app: App, options?: PopoutMessageOptions) => void;
 };
 export default _default;
 /**

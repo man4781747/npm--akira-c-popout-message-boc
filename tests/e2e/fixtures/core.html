@@ -22,6 +22,8 @@
         document.getElementById('count').textContent = count
       })
       window.__noVue = typeof window.Vue === 'undefined'
+      // 讓 E2E 測試可直接呼叫 configure / update 等 API
+      window.notify = notify
     </script>
   </body>
 </html>

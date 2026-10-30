@@ -122,6 +122,71 @@ Load Vue first. The global variable is `PopoutMessageBoxVue`:
 </script>
 ```
 
+## Configuration
+
+You can configure the maximum number of messages, the default duration and the position. Only the fields you pass are applied:
+
+```typescript
+// Vue: pass options when installing
+app.use(PopoutMessagePlugin, { max: 5, duration: 3, position: 'bottom-right' })
+
+// Without Vue, or to change it at runtime
+notify.configure({ position: 'top-center' })
+notify.getConfig() // { max: 5, duration: 3, position: 'top-center' }
+```
+
+| Option | Default | Description |
+|---|---|---|
+| `max` | `10` | Maximum shown at the same time; must be an integer >= 1 (same as `setMaxItemNumber`) |
+| `duration` | `5` | Seconds a message stays when `lifeTime` is not given; `0` means it never closes automatically |
+| `position` | `'top-right'` | `'top-left'`, `'top-center'`, `'top-right'`, `'bottom-left'`, `'bottom-center'`, `'bottom-right'` |
+
+- At the top, new messages appear at the top; at the bottom, new messages appear at the bottom (always closest to the screen edge).
+- Invalid values throw a `RangeError`, and none of the options are applied.
+- Changing `position` while messages are visible moves them immediately.
+
+## Controlling Messages
+
+### Messages that don't close automatically
+
+A message with `lifeTime` set to `0` never closes on its own (and shows no countdown). It closes only when clicked or when `close()` is called, which suits important errors:
+
+```typescript
+notify.error('Payment failed', 'Please contact support', 0)
+```
+
+### Message handle
+
+Every message method returns a handle:
+
+```typescript
+const msg = notify.info('Uploading…', 'Please wait', 0)
+
+// Change it later; only the fields you pass are changed, and the countdown restarts with the new (or original) lifeTime
+msg.update({ type: 'success', mainString: 'Upload complete', despString: '', lifeTime: 3 })
+
+// Or close it directly
+msg.close()
+```
+
+Fields accepted by `update()`:
+
+| Field | Description |
+|---|---|
+| `mainString` | Main message text |
+| `despString` | Description text |
+| `type` | `'success'`, `'error'`, `'info'`, `'warning'`, `'debug'`, `'primary'` |
+| `lifeTime` | New duration in seconds (`0` means it never closes automatically) |
+
+- Calling `update()` on a message that has started closing does nothing, and calling `close()` again has no effect.
+- An invalid `type` or `lifeTime` throws a `RangeError`.
+
+### Closing all messages
+
+```typescript
+notify.clear()
+```
+
 ## TypeScript
 
 Type declarations are included, so you get type hints out of the box. You can also import the related types:
@@ -133,6 +198,8 @@ const notify: PopoutMessageMethods = usePopoutMessage()
 
 // Without Vue
 import { notify, type PopoutMessageState, type PopoutMessageCore } from 'akira-c-popout-message-box/core'
+
+// Other types: MessageHandle, MessageUpdate, MessageType, Position, PopoutMessageOptions
 ```
 
 ## API
@@ -143,19 +210,24 @@ import { notify, type PopoutMessageState, type PopoutMessageCore } from 'akira-c
 
 - `mainString`: Main message text (required)
 - `despString`: Description text (optional)
-- `lifeTime`: Display duration in seconds, defaults to 5 seconds (optional)
+- `lifeTime`: Display duration in seconds; defaults to the `duration` option (5 seconds). `0` means it never closes automatically; negative numbers or `NaN` throw a `RangeError` (optional)
+
+Each returns a handle `{ close(), update(changes) }`; see [Controlling Messages](#controlling-messages).
 
 ### Other methods
 
 | Method | core | Vue | Description |
 |---|---|---|---|
-| `setMaxItemNumber(max)` | ✓ | ✓ | Sets the maximum shown at the same time (default 10). Must be an integer >= 1, otherwise a `RangeError` is thrown |
+| `configure(options)` | ✓ | ✓ | Changes the configuration; see [Configuration](#configuration) |
+| `getConfig()` | ✓ | (via `notify`) | Gets the current configuration |
+| `clear()` | ✓ | ✓ | Closes all visible messages |
+| `setMaxItemNumber(max)` | ✓ | ✓ | Sets the maximum shown at the same time (default 10); same as `configure({ max })`. Must be an integer >= 1, otherwise a `RangeError` is thrown |
 | `getMaxItemNumber()` | ✓ | ✓ | Gets the maximum |
 | `getCount()` | ✓ | | Gets the current number of visible messages |
 | `subscribe(listener)` | ✓ | | Calls `listener({ count, maxItemNumber })` on every state change; returns an unsubscribe function |
 | `status.count` / `status.maxItemNumber` | | ✓ | Vue refs, usable directly in templates |
 
-> The `notify` exported from `akira-c-popout-message-box` is the core `notify`, so Vue projects can use `getCount()` and `subscribe()` as well.
+> The `notify` exported from `akira-c-popout-message-box` is the core `notify`, so Vue projects can use `getConfig()`, `getCount()` and `subscribe()` as well.
 
 ## Changelog
 
@@ -183,11 +255,18 @@ import { notify, type PopoutMessageState, type PopoutMessageCore } from 'akira-c
   | `@keyframes time_mask_anime` | `@keyframes popout-time-mask` |
 
 - `setMaxItemNumber` now throws a `RangeError` when given anything other than an integer >= 1 (e.g. `0`, negative numbers, `NaN`, decimals). Previously such values were accepted.
+- A negative or `NaN` `lifeTime` now throws a `RangeError` (previously the message closed immediately), and a `lifeTime` of `0` now means the message never closes automatically.
+- Message methods now return a handle (previously they returned nothing).
 - `vue` moved from `dependencies` to an optional `peerDependency`, so your project no longer risks installing a second copy of Vue. Vue is not needed when only `/core` is used.
 
 **Added**
 
 - Framework-agnostic entry `akira-c-popout-message-box/core`, providing `notify` with `getCount()` and `subscribe()`.
+- Configuration: `notify.configure({ max, duration, position })` and `notify.getConfig()`; in Vue, pass options with `app.use(PopoutMessagePlugin, options)`.
+- Positions: six positions (left, center and right, at the top or bottom); at the bottom, new messages appear at the bottom.
+- Messages with a `lifeTime` (or `duration`) of `0` never close automatically.
+- Message handles: message methods return `{ close(), update() }`; `update()` changes the text, type and duration and restarts the countdown.
+- `notify.clear()` closes all messages.
 - The Vue entry exports `notify` for use outside components.
 - TypeScript declarations (`.d.ts`) are now included, exporting `PopoutMessageMethods`, `PopoutMessageCore`, `PopoutMessageState` and related types.
 - Lowering the limit with `setMaxItemNumber` now closes the oldest messages over the limit immediately (previously this only took effect when the next message was created).
@@ -226,7 +305,8 @@ You can override styles using these classes:
 
 | Selector | Description |
 |---|---|
-| `#popout-message-box-list` | Container for all messages (fixed to the top-right corner) |
+| `#popout-message-box-list` | Container for all messages (fixed on screen; placed according to `position`) |
+| `.popout-position--top-right`, etc. | The container's current position (set on the container) |
 | `.popout-message-box` | Outer wrapper of a single message |
 | `.popout-card` | Message card |
 | `.popout-card--success` / `--fail` / `--info` / `--warning` / `--primary` / `--debug` | Message types (left border color) |
@@ -268,6 +348,8 @@ To change colors only, you can also set the CSS variables (except for `info`, wh
 - Pause timer on hover
 - Click to dismiss
 - Multiple simultaneous messages with a configurable limit
+- Six display positions
+- Messages that stay until closed, and handles to update or close them later
 - Responsive design
 - Animation effects
 - TypeScript types included

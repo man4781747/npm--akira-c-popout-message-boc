@@ -60,3 +60,69 @@ test('調低上限時立即只保留最新的訊息', async ({ page }) => {
   await expect(boxes(page)).toHaveCount(2, { timeout: 4000 })
   await expect(cards(page).locator('.popout-card__title')).toHaveText(['3', '2'])
 })
+
+// 六個位置：容器貼齊對應的角落 / 邊緣，下方位置時新訊息在最下面
+for (const [position, horizontal, vertical] of [
+  ['top-left', 'left', 'top'],
+  ['top-center', 'center', 'top'],
+  ['top-right', 'right', 'top'],
+  ['bottom-left', 'left', 'bottom'],
+  ['bottom-center', 'center', 'bottom'],
+  ['bottom-right', 'right', 'bottom'],
+]) {
+  test(`position: ${position}`, async ({ page }) => {
+    await page.evaluate((position) => {
+      window.notify.configure({ position })
+      window.notify.info('old', '', 0)
+      window.notify.info('new', '', 0)
+    }, position)
+    await expect(cards(page)).toHaveCount(2)
+    // 等進場動畫結束
+    await expect(cards(page).first()).toHaveCSS('transform', /none|matrix\(1, 0, 0, 1, 0, 0\)/)
+    await page.waitForTimeout(600)
+
+    const viewport = page.viewportSize()
+    const box = await list(page).boundingBox()
+    if (horizontal === 'left') expect(box.x).toBeLessThan(50)
+    if (horizontal === 'right') expect(box.x + box.width).toBeGreaterThan(viewport.width - 50)
+    if (horizontal === 'center') {
+      expect(Math.abs(box.x + box.width / 2 - viewport.width / 2)).toBeLessThan(5)
+    }
+    if (vertical === 'top') expect(box.y).toBeLessThan(viewport.height / 2)
+    if (vertical === 'bottom') expect(box.y + box.height).toBeGreaterThan(viewport.height - 50)
+
+    const newY = (await cards(page).filter({ hasText: 'new' }).boundingBox()).y
+    const oldY = (await cards(page).filter({ hasText: 'old' }).boundingBox()).y
+    if (vertical === 'top') expect(newY).toBeLessThan(oldY)
+    if (vertical === 'bottom') expect(newY).toBeGreaterThan(oldY)
+  })
+}
+
+test('update() 改變內容後卡片高度跟著調整', async ({ page }) => {
+  await page.evaluate(() => {
+    window.msg = window.notify.info('短', '', 0)
+  })
+  await page.waitForTimeout(600)
+  const before = (await cards(page).first().boundingBox()).height
+
+  await page.evaluate(() => {
+    window.msg.update({ despString: '很長的說明文字 '.repeat(20) })
+  })
+  await page.waitForTimeout(100)
+  const after = (await cards(page).first().boundingBox()).height
+  expect(after).toBeGreaterThan(before)
+  // 內容沒有被固定高度裁切
+  const clipped = await cards(page).first().evaluate((el) => el.scrollHeight > el.clientHeight + 1)
+  expect(clipped).toBe(false)
+})
+
+test('clear() 關閉所有訊息', async ({ page }) => {
+  await page.evaluate(() => {
+    window.notify.info('a', '', 0)
+    window.notify.info('b', '', 0)
+    window.notify.clear()
+  })
+
+  await expect(page.locator('#count')).toHaveText('0')
+  await expect(boxes(page)).toHaveCount(0, { timeout: 4000 })
+})

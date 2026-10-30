@@ -8,6 +8,7 @@ import { type App, inject, type InjectionKey } from 'vue'
 // - popoutMessage 是實作通知邏輯的對象（像是一個通知系統）
 // - PopoutMessageMethods 則定義這個通知系統有哪些可以用的方法（例如 show(), hide() 等）
 import { popoutMessage, type PopoutMessageMethods } from './popoutMessageService'
+import type { PopoutMessageOptions } from './popoutMessageCore'
 
 // 建立一個唯一的 InjectionKey，用來作為 provide/inject 的鍵值
 // 這樣可以避免 key 重複問題，也能提供更安全的型別提示
@@ -16,8 +17,10 @@ export const PopoutMessageInjectionKey: InjectionKey<PopoutMessageMethods> = Sym
 // 匯出一個 Vue 插件（Plugin object）
 // 使用者可以在 main.ts 中透過 app.use(...) 註冊這個插件
 // 當插件被註冊時，它會將 popoutMessage 提供（provide）給整個 Vue 應用
+// 可帶入設定：app.use(PopoutMessagePlugin, { max: 5, duration: 3, position: 'bottom-right' })
 export default {
-  install: (app: App) => {
+  install: (app: App, options?: PopoutMessageOptions) => {
+    if (options) popoutMessage.configure(options)
     // 利用 provide 機制，將 popoutMessage 實例與 key 綁在一起
     app.provide(PopoutMessageInjectionKey, popoutMessage)
     // 這樣在應用中其他地方，只要知道這個 key，就可以 inject 使用 popoutMessage

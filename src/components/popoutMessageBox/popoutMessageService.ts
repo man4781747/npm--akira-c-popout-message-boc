@@ -1,7 +1,7 @@
 // Vue 轉接層：把核心的狀態同步成 Vue ref，並提供與先前版本相同的服務介面
 // Vue adapter: syncs core state into Vue refs and keeps the same service interface as before
 import { ref } from 'vue'
-import { notify } from './popoutMessageCore'
+import { notify, type MessageHandle, type PopoutMessageOptions } from './popoutMessageCore'
 
 const count = ref(notify.getCount())
 const maxItemNumber = ref(notify.getMaxItemNumber())
@@ -20,14 +20,17 @@ export const status = {
 // 定義 popoutMessage 所提供的方法介面：代表彈出訊息可使用的種類
 // - mainString: 標題文字或主要訊息
 // - despString: 補充說明（可選）
-// - lifeTime: 彈出訊息存活時間（秒），預設為 5 秒
+// - lifeTime: 彈出訊息存活時間（秒），省略時使用 duration 設定（預設 5 秒），0 代表不自動關閉
+// 每個訊息方法都回傳 MessageHandle，可之後 close() 或 update()
 export interface PopoutMessageMethods {
-  success: (mainString: string, despString?: string, lifeTime?: number) => void
-  error: (mainString: string, despString?: string, lifeTime?: number) => void
-  info: (mainString: string, despString?: string, lifeTime?: number) => void
-  warning: (mainString: string, despString?: string, lifeTime?: number) => void
-  debug: (mainString: string, despString?: string, lifeTime?: number) => void
-  primary: (mainString: string, despString?: string, lifeTime?: number) => void
+  success: (mainString: string, despString?: string, lifeTime?: number) => MessageHandle
+  error: (mainString: string, despString?: string, lifeTime?: number) => MessageHandle
+  info: (mainString: string, despString?: string, lifeTime?: number) => MessageHandle
+  warning: (mainString: string, despString?: string, lifeTime?: number) => MessageHandle
+  debug: (mainString: string, despString?: string, lifeTime?: number) => MessageHandle
+  primary: (mainString: string, despString?: string, lifeTime?: number) => MessageHandle
+  clear: () => void
+  configure: (options: PopoutMessageOptions) => void
   setMaxItemNumber: (max: number) => void
   getMaxItemNumber: () => number
   status: {
@@ -48,6 +51,8 @@ export const popoutMessage: PopoutMessageMethods = {
   warning: notify.warning,
   debug: notify.debug,
   primary: notify.primary,
+  clear: notify.clear,
+  configure: notify.configure,
   setMaxItemNumber: notify.setMaxItemNumber,
   getMaxItemNumber: notify.getMaxItemNumber,
   status: status,

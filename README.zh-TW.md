@@ -121,6 +121,71 @@ axios.interceptors.response.use(undefined, (error) => {
 </script>
 ```
 
+## 設定
+
+可設定同時顯示的上限、預設顯示秒數與顯示位置，只會套用有傳入的欄位：
+
+```typescript
+// Vue：安裝時帶入
+app.use(PopoutMessagePlugin, { max: 5, duration: 3, position: 'bottom-right' })
+
+// 不使用 Vue，或在執行中修改
+notify.configure({ position: 'top-center' })
+notify.getConfig() // { max: 5, duration: 3, position: 'top-center' }
+```
+
+| 選項 | 預設 | 說明 |
+|---|---|---|
+| `max` | `10` | 同時顯示的上限，必須是大於等於 1 的整數（同 `setMaxItemNumber`） |
+| `duration` | `5` | 未指定 `lifeTime` 時的顯示秒數；`0` 代表不自動關閉 |
+| `position` | `'top-right'` | `'top-left'`、`'top-center'`、`'top-right'`、`'bottom-left'`、`'bottom-center'`、`'bottom-right'` |
+
+- 放在上方時新訊息在最上面；放在下方時新訊息在最下面（永遠最靠近畫面邊緣）。
+- 不合法的值會拋出 `RangeError`，且整組設定都不會套用。
+- 容器已顯示時修改 `position` 會立即移動。
+
+## 控制訊息
+
+### 不自動關閉
+
+`lifeTime` 傳 `0` 的訊息不會自動關閉（也不顯示倒數），使用者點擊或程式呼叫 `close()` 才會關閉，適合重要錯誤：
+
+```typescript
+notify.error('付款失敗', '請聯絡客服', 0)
+```
+
+### 控制物件
+
+每個訊息方法都會回傳控制物件：
+
+```typescript
+const msg = notify.info('上傳中…', '請稍候', 0)
+
+// 之後修改內容；只改有傳入的欄位，並以新的（或原本的）lifeTime 重新計時
+msg.update({ type: 'success', mainString: '上傳完成', despString: '', lifeTime: 3 })
+
+// 或直接關閉
+msg.close()
+```
+
+`update()` 可傳入的欄位：
+
+| 欄位 | 說明 |
+|---|---|
+| `mainString` | 主要訊息文字 |
+| `despString` | 補充說明文字 |
+| `type` | `'success'`、`'error'`、`'info'`、`'warning'`、`'debug'`、`'primary'` |
+| `lifeTime` | 新的顯示秒數（`0` 代表不自動關閉） |
+
+- 已開始關閉的訊息呼叫 `update()` 不會有任何變化，`close()` 重複呼叫也沒有影響。
+- 不合法的 `type` 或 `lifeTime` 會拋出 `RangeError`。
+
+### 全部關閉
+
+```typescript
+notify.clear()
+```
+
 ## TypeScript
 
 套件附帶型別宣告，可直接取得型別提示，也可匯入相關型別：
@@ -132,6 +197,8 @@ const notify: PopoutMessageMethods = usePopoutMessage()
 
 // 不使用 Vue
 import { notify, type PopoutMessageState, type PopoutMessageCore } from 'akira-c-popout-message-box/core'
+
+// 其他型別：MessageHandle、MessageUpdate、MessageType、Position、PopoutMessageOptions
 ```
 
 ## API
@@ -142,19 +209,24 @@ import { notify, type PopoutMessageState, type PopoutMessageCore } from 'akira-c
 
 - `mainString`: 主要訊息文字（必填）
 - `despString`: 補充說明文字（選填）
-- `lifeTime`: 顯示時間（秒），預設為 5 秒（選填）
+- `lifeTime`: 顯示時間（秒），省略時使用 `duration` 設定（預設 5 秒）；`0` 代表不自動關閉；負數或 `NaN` 拋出 `RangeError`（選填）
+
+回傳控制物件 `{ close(), update(changes) }`，見[控制訊息](#控制訊息)。
 
 ### 其他方法
 
 | 方法 | core | Vue | 說明 |
 |---|---|---|---|
-| `setMaxItemNumber(max)` | ✓ | ✓ | 設定同時顯示的上限（預設 10）。必須是大於等於 1 的整數，否則拋出 `RangeError` |
+| `configure(options)` | ✓ | ✓ | 修改設定，見[設定](#設定) |
+| `getConfig()` | ✓ | （透過 `notify`） | 取得目前設定 |
+| `clear()` | ✓ | ✓ | 關閉所有顯示中的訊息 |
+| `setMaxItemNumber(max)` | ✓ | ✓ | 設定同時顯示的上限（預設 10），等同 `configure({ max })`。必須是大於等於 1 的整數，否則拋出 `RangeError` |
 | `getMaxItemNumber()` | ✓ | ✓ | 取得上限 |
 | `getCount()` | ✓ | | 取得目前顯示中的訊息數 |
 | `subscribe(listener)` | ✓ | | 狀態變化時呼叫 `listener({ count, maxItemNumber })`，回傳取消訂閱的函數 |
 | `status.count` / `status.maxItemNumber` | | ✓ | Vue ref，可直接用在模板中 |
 
-> 從 `akira-c-popout-message-box` 匯入的 `notify` 就是 core 的 `notify`，因此 Vue 專案也可以使用 `getCount()` 與 `subscribe()`。
+> 從 `akira-c-popout-message-box` 匯入的 `notify` 就是 core 的 `notify`，因此 Vue 專案也可以使用 `getConfig()`、`getCount()` 與 `subscribe()`。
 
 ## 變更說明
 
@@ -182,11 +254,18 @@ import { notify, type PopoutMessageState, type PopoutMessageCore } from 'akira-c
   | `@keyframes time_mask_anime` | `@keyframes popout-time-mask` |
 
 - `setMaxItemNumber` 收到不是大於等於 1 的整數（例如 `0`、負數、`NaN`、小數）時，改為拋出 `RangeError`（原本會直接接受）。
+- `lifeTime` 為負數或 `NaN` 時改為拋出 `RangeError`（原本會立即關閉）；`lifeTime` 為 `0` 改為代表不自動關閉。
+- 訊息方法改為回傳控制物件（原本沒有回傳值）。
 - `vue` 由 `dependencies` 改為選用的 `peerDependencies`，避免專案中安裝到第二份 Vue；只使用 `/core` 時不需要安裝 Vue。
 
 **新增**
 
 - 不依賴框架的入口 `akira-c-popout-message-box/core`，提供 `notify` 與 `getCount()`、`subscribe()`。
+- 設定：`notify.configure({ max, duration, position })`、`notify.getConfig()`，Vue 可用 `app.use(PopoutMessagePlugin, options)` 帶入。
+- 顯示位置：支援上、下方的左、中、右六個位置；下方位置時新訊息在最下面。
+- 不自動關閉：`lifeTime`（或 `duration`）為 `0` 時不自動關閉。
+- 控制物件：訊息方法回傳 `{ close(), update() }`，`update()` 可修改文字、類型與顯示時間並重新計時。
+- `notify.clear()` 關閉所有訊息。
 - Vue 入口匯出 `notify`，可在組件以外使用。
 - 附帶 TypeScript 型別宣告（`.d.ts`），並匯出 `PopoutMessageMethods`、`PopoutMessageCore`、`PopoutMessageState` 等型別。
 - 調低 `setMaxItemNumber` 時，會立即關閉超出上限的最舊訊息（原本要等下一則訊息建立時才生效）。
@@ -225,7 +304,8 @@ import { notify, type PopoutMessageState, type PopoutMessageCore } from 'akira-c
 
 | 選擇器 | 說明 |
 |---|---|
-| `#popout-message-box-list` | 所有訊息的容器（固定於畫面右上角） |
+| `#popout-message-box-list` | 所有訊息的容器（固定於畫面上，位置依 `position` 設定） |
+| `.popout-position--top-right` 等 | 容器目前的位置（加在容器上） |
 | `.popout-message-box` | 單則訊息的外層 |
 | `.popout-card` | 訊息卡片 |
 | `.popout-card--success` / `--fail` / `--info` / `--warning` / `--primary` / `--debug` | 各訊息類型（左側邊框顏色） |
@@ -267,6 +347,8 @@ body #popout-message-box-list .popout-message-box .popout-card .popout-card__bod
 - 滑鼠懸停時暫停計時
 - 可點擊關閉
 - 支援多個訊息同時顯示，並可設定上限
+- 六個顯示位置
+- 可不自動關閉，或之後修改、關閉訊息
 - 響應式設計
 - 動畫效果
 - 附帶 TypeScript 型別
