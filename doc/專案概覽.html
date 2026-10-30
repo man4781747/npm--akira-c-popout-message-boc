@@ -138,7 +138,7 @@ svg.diagram .arrowhead { fill: var(--diagram-stroke); stroke: none; }
   <div class="fact"><div class="k">最新 commit</div><div class="v"><code>1dfadf2</code> 0.0.9</div></div>
   <div class="fact"><div class="k">執行期依賴</div><div class="v">無（vue 為選用 peer）</div></div>
   <div class="fact"><div class="k">入口</div><div class="v">Vue 版 + <code>/core</code></div></div>
-  <div class="fact"><div class="k">測試</div><div class="v">單元 140 · E2E 20</div></div>
+  <div class="fact"><div class="k">測試</div><div class="v">單元 262 · E2E 38</div></div>
   <div class="fact"><div class="k">Demo</div><div class="v"><a href="https://man4781747.github.io/Vue3_Typescript__PopoutMessageBox__Demo/">GitHub Pages</a></div></div>
 </div>
 
@@ -195,6 +195,17 @@ svg.diagram .arrowhead { fill: var(--diagram-stroke); stroke: none; }
       </div>
       <div class="demo-row">
         <label>setMaxItemNumber：<input type="number" id="core-max" min="1" max="20" value="10" style="width:80px"></label>
+        <label>position：
+          <select id="core-position">
+            <option>top-left</option><option>top-center</option><option selected>top-right</option>
+            <option>bottom-left</option><option>bottom-center</option><option>bottom-right</option>
+          </select>
+        </label>
+      </div>
+      <div class="demo-row">
+        <button class="b-info" id="core-persist">上傳中…（lifeTime 0）</button>
+        <button class="b-success" id="core-update">update → 完成</button>
+        <button id="core-clear">clear()</button>
       </div>
       <p>subscribe 收到：顯示 <strong id="core-count">0</strong> / 上限 <strong id="core-max-view">10</strong></p>
     </div>
@@ -251,8 +262,11 @@ notify.status.count.value           // Vue ref</code></pre>
 <div class="table-wrap">
 <table>
   <tr><th>方法</th><th>core</th><th>Vue</th><th>說明</th></tr>
-  <tr><td><code>success / error / info / warning / debug / primary</code></td><td>✓</td><td>✓</td><td><code>(mainString, despString?, lifeTime = 5)</code>，<code>lifeTime</code> 單位為秒</td></tr>
-  <tr><td><code>setMaxItemNumber(max)</code></td><td>✓</td><td>✓</td><td>上限預設 10；非大於等於 1 的整數拋 <code>RangeError</code>；調低時立即關閉最舊的多餘訊息</td></tr>
+  <tr><td><code>success / error / info / warning / debug / primary</code></td><td>✓</td><td>✓</td><td><code>(mainString, despString?, lifeTime?)</code>；<code>lifeTime</code> 單位為秒，省略時用 <code>duration</code> 設定，<code>0</code> 為不自動關閉；回傳控制物件 <code>{ close(), update(changes) }</code></td></tr>
+  <tr><td><code>configure(options)</code></td><td>✓</td><td>✓</td><td><code>{ max, duration, position }</code>，只套用有傳入的欄位；全部驗證通過才套用。Vue 也可 <code>app.use(Plugin, options)</code></td></tr>
+  <tr><td><code>getConfig()</code></td><td>✓</td><td>（透過 <code>notify</code>）</td><td>取得目前設定（預設 <code>{ max: 10, duration: 5, position: 'top-right' }</code>）</td></tr>
+  <tr><td><code>clear()</code></td><td>✓</td><td>✓</td><td>關閉所有顯示中的訊息</td></tr>
+  <tr><td><code>setMaxItemNumber(max)</code></td><td>✓</td><td>✓</td><td>等同 <code>configure({ max })</code>；非大於等於 1 的整數拋 <code>RangeError</code>；調低時立即關閉最舊的多餘訊息</td></tr>
   <tr><td><code>getMaxItemNumber()</code></td><td>✓</td><td>✓</td><td>取得上限</td></tr>
   <tr><td><code>getCount()</code></td><td>✓</td><td>（透過 <code>notify</code>）</td><td>顯示中（尚未開始關閉）的訊息數</td></tr>
   <tr><td><code>subscribe(listener)</code></td><td>✓</td><td>（透過 <code>notify</code>）</td><td>建立、關閉、設定上限時呼叫 <code>listener({ count, maxItemNumber })</code>，回傳取消訂閱函數</td></tr>
@@ -286,13 +300,15 @@ notify.status.count.value           // Vue ref</code></pre>
 
 <h3>行為一覽</h3>
 <ul>
-  <li><strong>位置</strong>：<code>top: 3rem; right: 0; z-index: 99999</code>，最大寬 400px，超出高度可捲動。</li>
-  <li><strong>排序與透明度</strong>：新訊息在最上方；只有第一則不透明，其餘 opacity 0.3，懸停時恢復。</li>
+  <li><strong>位置</strong>：依 <code>position</code> 在容器加上 <code>popout-position--*</code> class，支援上、下方的左、中、右六個位置（上方距頂端 3rem）；<code>z-index: 99999</code>，最大寬 400px，超出高度可捲動。</li>
+  <li><strong>排序與透明度</strong>：DOM 中新訊息永遠在最前面；下方位置以 <code>flex-direction: column-reverse</code> 讓新訊息顯示在最下面。只有最新一則不透明，其餘 opacity 0.3，懸停時恢復。</li>
+  <li><strong>不自動關閉</strong>：<code>lifeTime</code>（或 <code>duration</code>）為 0 時不計時、隱藏倒數遮罩，只能點擊或 <code>close()</code> 關閉。</li>
+  <li><strong>控制物件</strong>：<code>update()</code> 修改文字、類型、顯示時間並重新計時（懸停中則保持暫停）；內容變動後重新量測卡片高度。</li>
   <li><strong>倒數視覺</strong>：<code>.popout-card__time-mask</code> 以 <code>lifeTime</code> 秒的 CSS 動畫由左至右填滿。</li>
   <li><strong>懸停暫停</strong>：<code>mouseenter</code> 暫停計時並記下剩餘時間；<code>mouseleave</code> 以剩餘時間繼續（已在關閉中則不再計時）。</li>
   <li><strong>點擊關閉</strong>：點擊卡片任何位置立即開始關閉。</li>
   <li><strong>數量上限</strong>：顯示中的訊息超過上限時，從最舊的開始關閉。</li>
-  <li><strong>動畫</strong>：<code>popout-slide</code> 由右滑入、向右上滑出並收合高度；關閉 2 秒後移除 DOM。</li>
+  <li><strong>動畫</strong>：<code>popout-slide</code> 靠右時由右滑入、向右上滑出；靠左時方向相反；置中時改為淡入淡出；離場時收合高度，關閉 2 秒後移除 DOM。</li>
 </ul>
 
 <!-- ============================================================ -->
@@ -302,7 +318,7 @@ notify.status.count.value           // Vue ref</code></pre>
 <div class="table-wrap">
 <table>
   <tr><th>檔案</th><th>職責</th></tr>
-  <tr><td><code>src/components/popoutMessageBox/popoutMessageCore.ts</code></td><td><strong>核心（不依賴 Vue）</strong>：注入樣式、建立容器與訊息 DOM、進出場動畫、計時與暫停、上限、狀態與訂閱、<code>notify</code> 單例</td></tr>
+  <tr><td><code>src/components/popoutMessageBox/popoutMessageCore.ts</code></td><td><strong>核心（不依賴 Vue）</strong>：設定（<code>configure</code>）、注入樣式、建立容器與訊息 DOM、進出場動畫、計時與暫停、控制物件、上限、狀態與訂閱、<code>notify</code> 單例</td></tr>
   <tr><td><code>src/components/popoutMessageBox/popoutMessageService.ts</code></td><td>Vue 轉接層：訂閱核心、同步成 <code>status</code> 的 ref，定義 <code>PopoutMessageMethods</code></td></tr>
   <tr><td><code>src/components/popoutMessageBox/PopoutMessagePlugin.ts</code></td><td>Vue plugin：<code>provide</code> 服務、<code>usePopoutMessage()</code></td></tr>
   <tr><td><code>src/components/popoutMessageBox/popoutMessageBox.css</code></td><td>樣式（巢狀 CSS，經 postcss-nesting 轉換；核心以 <code>?inline</code> 載入成字串）</td></tr>
@@ -367,14 +383,15 @@ notify.status.count.value           // Vue ref</code></pre>
 <ol>
   <li><strong>建立</strong>：組出 DOM 並 prepend；卡片加上 <code>popout-slide-enter-from / -active</code>，兩個 frame 後換成 <code>-enter-to</code>，<code>transitionend</code> 後移除。</li>
   <li><strong>100ms 後</strong>：若尚未關閉，把卡片高度固定為實際高度，讓關閉時的高度收合有動畫。</li>
-  <li><strong>計時</strong>：<code>setTimeout(close, lifeTime * 1000)</code>；<code>pause()</code> 清計時並扣掉已過時間、遮罩加 <code>--stop</code>；<code>resume()</code> 以剩餘時間重新計時。</li>
+  <li><strong>計時</strong>：<code>restartCountdown(lifeTime)</code> 設定 <code>setTimeout(close, lifeTime * 1000)</code> 並重播遮罩動畫（0 則不計時）；<code>pause()</code> 清計時並扣掉已過時間、遮罩加 <code>--stop</code>；<code>resume()</code> 以剩餘時間重新計時。</li>
+  <li><strong>修改 <code>update()</code></strong>：先驗證，再改文字、替換類型 class；若已量測過高度則重新量測，最後 <code>restartCountdown()</code>。</li>
   <li><strong>關閉 <code>close()</code></strong>（時間到、點擊、或被上限擠出）：以 <code>closing</code> 旗標防止重複執行 → 停止計時 → 移出 <code>openItems</code> → 高度設 0 並播放 <code>popout-slide-leave</code> 動畫 → <code>emitChange()</code>。</li>
   <li><strong>2 秒後</strong>：移除外層 DOM。</li>
 </ol>
 
 <h3>模組層級狀態</h3>
 <ul>
-  <li><code>openItems</code>（顯示中的訊息）、<code>listeners</code>、<code>maxItemNumber</code> 都在核心模組內，整個頁面只有一份（單例）。</li>
+  <li><code>openItems</code>（顯示中訊息的控制物件）、<code>listeners</code>、<code>config</code>（<code>max</code>、<code>duration</code>、<code>position</code>）都在核心模組內，整個頁面只有一份（單例）。</li>
   <li>訊息與核心之間以 closure 與物件引用對應，不使用 DOM id、自訂事件或 uuid。</li>
   <li>載入模組時不存取 <code>document</code>，第一次顯示訊息時才建立 <code>&lt;style&gt;</code> 與容器。</li>
 </ul>
@@ -423,14 +440,15 @@ peerDependencies: vue ^3.2.41（peerDependenciesMeta: optional）</code></pre>
 <div class="table-wrap">
 <table>
   <tr><th>檔案</th><th>內容</th><th>目標</th></tr>
-  <tr><td><code>tests/unit/service.spec.js</code></td><td>訊息方法、class、排序、計數、上限、樣式注入</td><td rowspan="3">4 種：Vue src、Vue lib、core src、core lib</td></tr>
+  <tr><td><code>tests/unit/service.spec.js</code></td><td>訊息方法、class、排序、計數、上限、樣式注入</td><td rowspan="4">4 種：Vue src、Vue lib、core src、core lib</td></tr>
   <tr><td><code>tests/unit/component.spec.js</code></td><td>自動關閉、DOM 移除、懸停暫停、點擊關閉</td></tr>
   <tr><td><code>tests/unit/known-issues.spec.js</code></td><td>已修正問題 A、F、I、J 的回歸測試</td></tr>
+  <tr><td><code>tests/unit/features.spec.js</code></td><td><code>configure</code>、<code>duration</code>、<code>position</code>、<code>lifeTime</code> 0、控制物件 <code>close</code> / <code>update</code>、<code>clear</code></td></tr>
   <tr><td><code>tests/unit/core.spec.js</code></td><td><code>getCount</code>、<code>subscribe</code>、不引用 Vue、Vue 與 core 入口共用狀態</td><td>core src、core lib</td></tr>
   <tr><td><code>tests/unit/plugin.spec.js</code></td><td>匯出、plugin 安裝、<code>status</code> 同步、元件外使用 <code>notify</code></td><td>Vue src、Vue lib</td></tr>
   <tr><td><code>tests/unit/lib-build.spec.js</code></td><td>產物齊全、CSS 一致、vue external、兩個 UMD 的全域名稱</td><td>lib</td></tr>
-  <tr><td><code>tests/e2e/demo.spec.js</code></td><td>Vue demo 頁的實際操作（14 項）</td><td>Chromium</td></tr>
-  <tr><td><code>tests/e2e/core.spec.js</code></td><td>不使用 Vue 的 fixture 頁（6 項）</td><td>Chromium</td></tr>
+  <tr><td><code>tests/e2e/demo.spec.js</code></td><td>Vue 說明頁的實際操作（24 項，含中英切換、設定、控制物件、程式碼顯示）</td><td>Chromium</td></tr>
+  <tr><td><code>tests/e2e/core.spec.js</code></td><td>不使用 Vue 的 fixture 頁（14 項，含六個位置的實際版面、<code>update()</code> 後高度、<code>clear()</code>）</td><td>Chromium</td></tr>
 </table>
 </div>
 <p class="note">lib 相關的單元測試讀的是 <code>lib/</code> 的現有內容，改動原始碼後要先 <code>build:lib</code> 再跑測試。E2E 的 Vue demo 以 src 原始碼啟動，沒有另外測 <code>dev:built</code>。</p>
@@ -502,8 +520,6 @@ peerDependencies: vue ^3.2.41（peerDependenciesMeta: optional）</code></pre>
 
 <h3>後續可改善的方向（非問題）</h3>
 <ul>
-  <li>安裝 / 初始化時帶設定：位置（如 <code>bottom-right</code>）、預設 <code>lifeTime</code>、上限。</li>
-  <li><code>lifeTime: 0</code> 代表不自動關閉；方法回傳控制物件（<code>close()</code>、<code>update()</code>）與 <code>notify.clear()</code>。</li>
   <li><code>notify.promise(p, { loading, success, error })</code>、相同訊息合併、動作按鈕。</li>
   <li>無障礙：<code>aria-live</code>、error 使用 <code>role="alert"</code>、Esc 關閉、<code>prefers-reduced-motion</code>。</li>
   <li>主題：以 CSS 變數自訂顏色（目前 <code>info</code> 為固定色）、深色模式。</li>
@@ -530,6 +546,7 @@ peerDependencies: vue ^3.2.41（peerDependenciesMeta: optional）</code></pre>
   <tr><td><span class="tag ok">N</span></td><td>元件 README、App.vue 展示片段過時</td><td>元件 README 改為檔案職責說明；App.vue 片段同步並加 <code>v-pre</code></td></tr>
   <tr><td><span class="tag ok">—</span></td><td>class 名稱太通用（<code>.card</code> 等），被頁面樣式影響</td><td>改為 BEM + <code>popout-</code> 前綴；README 附新舊對照表（破壞性變更）</td></tr>
   <tr><td><span class="tag ok">—</span></td><td>只能在 Vue 中使用</td><td>新增 <code>/core</code> 入口；Vue 入口改為核心的轉接層</td></tr>
+  <tr><td><span class="tag ok">—</span></td><td>無法設定位置與預設時間、訊息建立後無法控制</td><td>新增 <code>configure</code>（<code>max</code> / <code>duration</code> / <code>position</code>）、<code>lifeTime</code> 0、控制物件 <code>close</code> / <code>update</code>、<code>clear</code></td></tr>
 </table>
 </div>
 
@@ -565,6 +582,27 @@ peerDependencies: vue ^3.2.41（peerDependenciesMeta: optional）</code></pre>
     } catch (err) {
       showError(err.name + '：' + err.message)
     }
+  })
+  document.getElementById('core-position').addEventListener('change', function (e) {
+    notify.configure({ position: e.target.value })
+  })
+  // 示範控制物件：先建立不自動關閉的訊息，之後以 update() 改成完成並 3 秒後關閉
+  var pending = null
+  document.getElementById('core-persist').addEventListener('click', function () {
+    pending = notify.info('上傳中…', '不會自動關閉，按「update → 完成」', 0)
+  })
+  document.getElementById('core-update').addEventListener('click', function () {
+    if (!pending) {
+      showError('請先按「上傳中…（lifeTime 0）」建立訊息')
+      return
+    }
+    errEl.hidden = true
+    pending.update({ type: 'success', mainString: '上傳完成', despString: 'update() 後 3 秒關閉', lifeTime: 3 })
+    pending = null
+  })
+  document.getElementById('core-clear').addEventListener('click', function () {
+    notify.clear()
+    pending = null
   })
   notify.subscribe(function (state) {
     document.getElementById('core-count').textContent = state.count

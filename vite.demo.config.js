@@ -28,7 +28,7 @@ export default defineConfig({
           return targetPath
         }
         : () => {
-          let targetPath = path.resolve(__dirname, 'src/components/popoutMessageBox/PopoutMessagePlugin')
+          let targetPath = path.resolve(__dirname, 'packages/index.ts')
           console.log("[開發模式使用] akira-c-popout-message-box 模組路徑導向至:",targetPath)
           return targetPath
         },

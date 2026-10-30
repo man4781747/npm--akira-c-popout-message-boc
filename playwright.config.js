@@ -4,6 +4,8 @@ export default defineConfig({
   testDir: 'tests/e2e',
   use: {
     baseURL: 'http://localhost:5173',
+    // demo 頁依瀏覽器語言決定預設語言，固定為英文讓測試結果一致
+    locale: 'en-US',
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
