@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <title>core (no Vue) e2e fixture</title>
+  </head>
+  <body>
+    <!-- 不使用 Vue，直接以原生 JS 呼叫核心 -->
+    <input id="msg" value="Hello core" />
+    <button id="success">success</button>
+    <button id="error">error</button>
+    <button id="max2">max 2</button>
+    <p>count: <span id="count">0</span></p>
+    <script type="module">
+      import { notify } from '/packages/core.ts'
+
+      const msg = document.getElementById('msg')
+      document.getElementById('success').onclick = () => notify.success(msg.value, 'core success', 10)
+      document.getElementById('error').onclick = () => notify.error(msg.value, 'core error', 10)
+      document.getElementById('max2').onclick = () => notify.setMaxItemNumber(2)
+      notify.subscribe(({ count }) => {
+        document.getElementById('count').textContent = count
+      })
+      window.__noVue = typeof window.Vue === 'undefined'
+    </script>
+  </body>
+</html>
