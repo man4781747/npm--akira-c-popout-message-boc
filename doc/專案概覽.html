@@ -1,0 +1,623 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>專案概覽</title>
+<style>
+:root {
+  --bg: #f7f7f5;
+  --surface: #ffffff;
+  --text: #1d1d1f;
+  --muted: #5f6368;
+  --border: #e2e2de;
+  --accent: #2f6fde;
+  --code-bg: #f0f0ec;
+  --high: #c0392b;
+  --mid: #b7791f;
+  --low: #5f6368;
+  --ok: #1e8a4c;
+  --diagram-fill: #ffffff;
+  --diagram-stroke: #9aa0a6;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161618;
+    --surface: #1f1f22;
+    --text: #e8e8ea;
+    --muted: #a0a0a8;
+    --border: #34343a;
+    --accent: #7aa7ff;
+    --code-bg: #2a2a2f;
+    --high: #ff7b6b;
+    --mid: #f0b450;
+    --low: #a0a0a8;
+    --ok: #5fd08e;
+    --diagram-fill: #26262b;
+    --diagram-stroke: #6c6c75;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #161618;
+  --surface: #1f1f22;
+  --text: #e8e8ea;
+  --muted: #a0a0a8;
+  --border: #34343a;
+  --accent: #7aa7ff;
+  --code-bg: #2a2a2f;
+  --high: #ff7b6b;
+  --mid: #f0b450;
+  --low: #a0a0a8;
+  --ok: #5fd08e;
+  --diagram-fill: #26262b;
+  --diagram-stroke: #6c6c75;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  line-height: 1.7;
+  font-size: 15px;
+}
+main { max-width: 920px; margin: 0 auto; padding: 32px 16px 80px; }
+h1 { font-size: 1.8rem; margin: 0 0 4px; line-height: 1.3; }
+h2 { font-size: 1.3rem; margin: 48px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 1.05rem; margin: 28px 0 8px; }
+p { margin: 8px 0; }
+a { color: var(--accent); }
+.sub { color: var(--muted); margin: 0 0 20px; }
+code, pre { font-family: Consolas, "Cascadia Code", monospace; font-size: 0.88em; }
+code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+pre { background: var(--code-bg); padding: 12px 14px; border-radius: 8px; overflow-x: auto; line-height: 1.5; }
+pre code { background: none; padding: 0; }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; margin: 8px 0; background: var(--surface); }
+th, td { text-align: left; padding: 8px 10px; border: 1px solid var(--border); vertical-align: top; }
+th { font-weight: 600; background: var(--code-bg); white-space: nowrap; }
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; margin: 12px 0; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin: 16px 0; }
+.fact { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; }
+.fact .k { color: var(--muted); font-size: 0.82rem; }
+.fact .v { font-weight: 600; }
+nav.toc { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 18px; }
+nav.toc ol { margin: 6px 0; padding-left: 20px; }
+.tag { display: inline-block; font-size: 0.75rem; font-weight: 600; padding: 0 8px; border-radius: 10px; border: 1px solid currentColor; white-space: nowrap; }
+.tag.high { color: var(--high); }
+.tag.mid { color: var(--mid); }
+.tag.low { color: var(--low); }
+.tag.ok { color: var(--ok); }
+.issue { border-left: 3px solid var(--border); padding: 4px 0 4px 14px; margin: 14px 0; }
+.issue.high { border-left-color: var(--high); }
+.issue.mid { border-left-color: var(--mid); }
+.issue .title { font-weight: 600; }
+.issue .where { color: var(--muted); font-size: 0.85rem; }
+.resolved td:first-child { white-space: nowrap; }
+.note { color: var(--muted); font-size: 0.88rem; }
+.swatch { display: inline-block; width: 12px; height: 12px; border-radius: 2px; vertical-align: -1px; margin-right: 6px; }
+svg.diagram { width: 100%; height: auto; display: block; }
+svg.diagram rect { fill: var(--diagram-fill); stroke: var(--diagram-stroke); }
+svg.diagram text { fill: var(--text); font-size: 13px; font-family: inherit; }
+svg.diagram text.small { fill: var(--muted); font-size: 11px; }
+svg.diagram line, svg.diagram path { stroke: var(--diagram-stroke); fill: none; }
+svg.diagram .arrowhead { fill: var(--diagram-stroke); stroke: none; }
+
+/* 互動示範 */
+.demo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+.demo-grid .panel { margin: 0; }
+.demo-grid h3 { margin-top: 0; }
+.demo-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; align-items: center; }
+.demo-row input[type=text] { flex: 1 1 200px; min-width: 0; }
+.demo-row input, .demo-row button {
+  font: inherit; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text);
+}
+.demo-row button { cursor: pointer; border-left-width: 4px; }
+.demo-row button:hover { filter: brightness(0.95); }
+.b-success { border-left-color: #198754 !important; }
+.b-fail { border-left-color: #dc3545 !important; }
+.b-info { border-left-color: #289dc9 !important; }
+.b-warning { border-left-color: #ffc107 !important; }
+.b-debug { border-left-color: #6c757d !important; }
+.b-primary { border-left-color: #0d6efd !important; }
+.demo-error { color: var(--high); }
+</style>
+</head>
+<body>
+<main>
+
+<h1>akira-c-popout-message-box 專案概覽</h1>
+<p class="sub">不依賴框架的彈出式訊息通知模組（另提供 Vue 3 plugin） · 維護者筆記 · 以 2026-10-30 的工作區（含未 commit 變更）為準</p>
+
+<div class="facts">
+  <div class="fact"><div class="k">npm 套件名</div><div class="v">akira-c-popout-message-box</div></div>
+  <div class="fact"><div class="k">工作區版本</div><div class="v">0.1.0（未 commit、未發佈）</div></div>
+  <div class="fact"><div class="k">npm 最新版</div><div class="v">0.0.10</div></div>
+  <div class="fact"><div class="k">最新 commit</div><div class="v"><code>1dfadf2</code> 0.0.9</div></div>
+  <div class="fact"><div class="k">執行期依賴</div><div class="v">無（vue 為選用 peer）</div></div>
+  <div class="fact"><div class="k">入口</div><div class="v">Vue 版 + <code>/core</code></div></div>
+  <div class="fact"><div class="k">測試</div><div class="v">單元 140 · E2E 20</div></div>
+  <div class="fact"><div class="k">Demo</div><div class="v"><a href="https://man4781747.github.io/Vue3_Typescript__PopoutMessageBox__Demo/">GitHub Pages</a></div></div>
+</div>
+
+<nav class="toc">
+  <strong>目錄</strong>
+  <ol>
+    <li><a href="#status">目前狀況</a></li>
+    <li><a href="#demo">互動示範（載入 lib/ 建置檔）</a></li>
+    <li><a href="#api">功能與 API</a></li>
+    <li><a href="#arch">架構與運作原理</a></li>
+    <li><a href="#build">建置 / 開發 / 測試 / 發佈</a></li>
+    <li><a href="#issues">已知問題與待辦</a></li>
+    <li><a href="#resolved">已解決的問題</a></li>
+  </ol>
+</nav>
+
+<!-- ============================================================ -->
+<h2 id="status">1. 目前狀況</h2>
+<p>0.1.0 把核心改寫成不依賴 Vue，原本的 Vue 用法維持相容，另外新增 <code>akira-c-popout-message-box/core</code> 入口。這段期間也修掉了先前記錄的大部分問題（見第 7 節）。單元測試與 E2E 全部通過，但<strong>所有變更都尚未 commit、也尚未發佈</strong>。</p>
+<p>另外注意：npm 上已有 0.0.10，但 git 最新 commit 仍是 0.0.9，也就是 0.0.10 是從未 commit 的狀態發佈的。</p>
+
+<h3>工作區 git 狀態摘要</h3>
+<div class="table-wrap">
+<table>
+  <tr><th>狀態</th><th>內容</th></tr>
+  <tr><td>已修改（部分 staged、部分未 staged）</td><td><code>package.json</code>、兩份 README、<code>src/App.vue</code>、<code>popoutMessageService.ts</code>、<code>lib/</code> 下的 ESM / UMD</td></tr>
+  <tr><td>已修改（未 staged）</td><td><code>PopoutMessagePlugin.ts</code>、<code>popoutMessageBox.css</code>、元件 README、<code>vite.lib.config.js</code>、<code>.gitignore</code>、<code>lib/popout-message-box.css</code></td></tr>
+  <tr><td>改名（staged）</td><td><code>packages/index.js</code> → <code>packages/index.ts</code></td></tr>
+  <tr><td>已刪除但暫存區仍有 staged 版本</td><td><code>src/components/popoutMessageBox/popoutMessageBox.vue</code>（commit 前需 <code>git add -A</code> 讓刪除生效）</td></tr>
+  <tr><td>Staged 新增</td><td><code>pnpm-lock.yaml</code>、<code>pnpm-workspace.yaml</code></td></tr>
+  <tr><td>Staged 但工作區已刪</td><td><code>.github/skills/karpathy-guidelines/SKILL.md</code></td></tr>
+  <tr><td>未追蹤（新檔）</td><td><code>popoutMessageCore.ts</code>、<code>packages/core.ts</code>、<code>tests/</code>、<code>vitest.config.js</code>、<code>playwright.config.js</code>、<code>tsconfig.lib.json</code>、<code>lib/</code> 下新增的 core 檔與型別、<code>doc/</code>、<code>.claude/</code></td></tr>
+</table>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="demo">2. 互動示範（載入 lib/ 建置檔）</h2>
+<p>兩組示範都以 <code>&lt;script&gt;</code> 載入 <code>../lib/</code> 下即將發佈的 UMD 建置檔，直接用 <code>file://</code> 開啟即可。訊息出現在畫面右上角。</p>
+<p class="note">兩個 UMD 檔<strong>各自內含一份核心</strong>，所以兩組示範的計數與上限互不影響（訊息會放進同一個容器）。這是 UMD 單檔的特性；透過 npm 以 ESM 使用時，Vue 入口直接引用 core 入口，兩者共用同一份狀態（有單元測試保護）。</p>
+
+<div class="demo-grid">
+  <div class="panel">
+    <h3>core（不需要 Vue）</h3>
+    <p class="note">載入 <code>popout-message-box-core.umd.cjs</code>，全域 <code>PopoutMessageBox</code>，完全離線可用。</p>
+    <div id="core-demo">
+      <div class="demo-row"><input type="text" id="core-msg" value="Hello core" aria-label="core 主訊息"></div>
+      <div class="demo-row">
+        <button class="b-success" data-type="success">success</button>
+        <button class="b-fail" data-type="error">error</button>
+        <button class="b-info" data-type="info">info</button>
+        <button class="b-warning" data-type="warning">warning</button>
+        <button class="b-debug" data-type="debug">debug</button>
+        <button class="b-primary" data-type="primary">primary</button>
+      </div>
+      <div class="demo-row">
+        <label>setMaxItemNumber：<input type="number" id="core-max" min="1" max="20" value="10" style="width:80px"></label>
+      </div>
+      <p>subscribe 收到：顯示 <strong id="core-count">0</strong> / 上限 <strong id="core-max-view">10</strong></p>
+    </div>
+    <p class="demo-error" id="core-error" hidden></p>
+  </div>
+
+  <div class="panel">
+    <h3>Vue 3 plugin</h3>
+    <p class="note">載入 <code>popout-message-box.umd.cjs</code>，全域 <code>PopoutMessageBoxVue</code>；Vue 由 unpkg 載入（需要網路）。</p>
+    <div id="vue-demo">
+      <div class="demo-row"><input type="text" v-model="msg" aria-label="Vue 主訊息"></div>
+      <div class="demo-row">
+        <button class="b-success" @click="notify.success(msg, 'success · 5 秒')">success</button>
+        <button class="b-fail" @click="notify.error(msg, 'error（class: popout-card--fail）')">error</button>
+        <button class="b-info" @click="notify.info(msg, 'info · 5 秒')">info</button>
+        <button class="b-primary" @click="notify.primary(msg, 'primary · 10 秒', 10)">primary（10 秒）</button>
+      </div>
+      <div class="demo-row">
+        <label>setMaxItemNumber：<input type="number" min="1" max="20" v-model.number="max" @change="setMax" style="width:80px"></label>
+      </div>
+      <p>status ref：顯示 <strong>{{ notify.status.count.value }}</strong> / 上限 <strong>{{ notify.status.maxItemNumber.value }}</strong></p>
+    </div>
+    <p class="demo-error" id="vue-error" hidden></p>
+  </div>
+</div>
+<p class="note">可以觀察到：本頁 <code>body</code> 的 <code>line-height: 1.7</code> 會被訊息卡片繼承，卡片比 demo 頁高一些（見問題 3）。輸入 0 或小數到上限欄位會觸發 <code>RangeError</code>，錯誤訊息會顯示在面板下方。</p>
+
+<!-- ============================================================ -->
+<h2 id="api">3. 功能與 API</h2>
+
+<h3>兩個入口</h3>
+<div class="table-wrap">
+<table>
+  <tr><th>import 路徑</th><th>匯出</th><th>需要 Vue</th></tr>
+  <tr><td><code>akira-c-popout-message-box</code></td><td><code>default</code>（<code>{ install, usePopoutMessage }</code>）、<code>PopoutMessagePlugin</code>、<code>usePopoutMessage</code>、<code>notify</code>，型別 <code>PopoutMessageMethods</code> 等</td><td>是</td></tr>
+  <tr><td><code>akira-c-popout-message-box/core</code></td><td><code>notify</code>，型別 <code>PopoutMessageCore</code>、<code>PopoutMessageState</code>、<code>PopoutMessageListener</code>、<code>MessageType</code></td><td>否</td></tr>
+</table>
+</div>
+<p>兩個入口的 <code>notify</code> 是同一個物件，Vue 專案也能在元件外（axios 攔截器、router guard 等）直接 import <code>notify</code>。</p>
+
+<h3>使用方式</h3>
+<pre><code>// 不用 Vue
+import { notify } from 'akira-c-popout-message-box/core'
+notify.success('儲存成功', '資料已更新', 5)
+const off = notify.subscribe(({ count, maxItemNumber }) =&gt; { /* ... */ })
+
+// Vue
+import PopoutMessagePlugin, { usePopoutMessage } from 'akira-c-popout-message-box'
+createApp(App).use(PopoutMessagePlugin).mount('#app')
+const notify = usePopoutMessage()   // setup() 內
+notify.status.count.value           // Vue ref</code></pre>
+
+<h3>方法</h3>
+<div class="table-wrap">
+<table>
+  <tr><th>方法</th><th>core</th><th>Vue</th><th>說明</th></tr>
+  <tr><td><code>success / error / info / warning / debug / primary</code></td><td>✓</td><td>✓</td><td><code>(mainString, despString?, lifeTime = 5)</code>，<code>lifeTime</code> 單位為秒</td></tr>
+  <tr><td><code>setMaxItemNumber(max)</code></td><td>✓</td><td>✓</td><td>上限預設 10；非大於等於 1 的整數拋 <code>RangeError</code>；調低時立即關閉最舊的多餘訊息</td></tr>
+  <tr><td><code>getMaxItemNumber()</code></td><td>✓</td><td>✓</td><td>取得上限</td></tr>
+  <tr><td><code>getCount()</code></td><td>✓</td><td>（透過 <code>notify</code>）</td><td>顯示中（尚未開始關閉）的訊息數</td></tr>
+  <tr><td><code>subscribe(listener)</code></td><td>✓</td><td>（透過 <code>notify</code>）</td><td>建立、關閉、設定上限時呼叫 <code>listener({ count, maxItemNumber })</code>，回傳取消訂閱函數</td></tr>
+  <tr><td><code>status.count / status.maxItemNumber</code></td><td></td><td>✓</td><td>Vue ref，由轉接層訂閱核心同步；唯讀用途</td></tr>
+</table>
+</div>
+
+<h3>訊息類型與 class</h3>
+<p>class 採 BEM 命名、<code>popout-</code> 前綴。顏色優先使用 Bootstrap CSS 變數，沒有時使用後備色，不依賴 Bootstrap。</p>
+<div class="table-wrap">
+<table>
+  <tr><th>方法</th><th>CSS class</th><th>邊框色</th></tr>
+  <tr><td><code>success</code></td><td><code>.popout-card--success</code></td><td><span class="swatch" style="background:#198754"></span><code>var(--bs-green, #198754)</code></td></tr>
+  <tr><td><code>error</code></td><td><code>.popout-card--fail</code></td><td><span class="swatch" style="background:#dc3545"></span><code>var(--bs-red, #dc3545)</code></td></tr>
+  <tr><td><code>info</code></td><td><code>.popout-card--info</code></td><td><span class="swatch" style="background:#289dc9"></span><code>#289dc9</code>（固定色）</td></tr>
+  <tr><td><code>warning</code></td><td><code>.popout-card--warning</code></td><td><span class="swatch" style="background:#ffc107"></span><code>var(--bs-warning, #ffc107)</code></td></tr>
+  <tr><td><code>primary</code></td><td><code>.popout-card--primary</code></td><td><span class="swatch" style="background:#0d6efd"></span><code>var(--bs-primary, #0d6efd)</code></td></tr>
+  <tr><td><code>debug</code></td><td><code>.popout-card--debug</code></td><td><span class="swatch" style="background:#6c757d"></span><code>var(--bs-secondary, #6c757d)</code></td></tr>
+</table>
+</div>
+
+<h3>DOM 結構</h3>
+<pre><code>&lt;div id="popout-message-box-list"&gt;            ← 容器，固定於右上角（首次顯示時建立）
+  &lt;div class="popout-message-box"&gt;            ← 單則訊息外層（新的在最上方）
+    &lt;div class="popout-card popout-card--success"&gt;
+      &lt;div class="popout-card__time-mask"&gt;     ← 倒數遮罩（懸停時加 --stop）
+      &lt;div class="popout-card__body"&gt;
+        &lt;div class="popout-card__title"&gt;主訊息&lt;/div&gt;
+        &lt;div class="popout-card__desp"&gt;補充說明&lt;/div&gt;</code></pre>
+<p>樣式以 <code>&lt;style id="popout-message-box-style"&gt;</code> 在顯示第一則訊息時注入 <code>&lt;head&gt;</code>（只注入一次）。</p>
+
+<h3>行為一覽</h3>
+<ul>
+  <li><strong>位置</strong>：<code>top: 3rem; right: 0; z-index: 99999</code>，最大寬 400px，超出高度可捲動。</li>
+  <li><strong>排序與透明度</strong>：新訊息在最上方；只有第一則不透明，其餘 opacity 0.3，懸停時恢復。</li>
+  <li><strong>倒數視覺</strong>：<code>.popout-card__time-mask</code> 以 <code>lifeTime</code> 秒的 CSS 動畫由左至右填滿。</li>
+  <li><strong>懸停暫停</strong>：<code>mouseenter</code> 暫停計時並記下剩餘時間；<code>mouseleave</code> 以剩餘時間繼續（已在關閉中則不再計時）。</li>
+  <li><strong>點擊關閉</strong>：點擊卡片任何位置立即開始關閉。</li>
+  <li><strong>數量上限</strong>：顯示中的訊息超過上限時，從最舊的開始關閉。</li>
+  <li><strong>動畫</strong>：<code>popout-slide</code> 由右滑入、向右上滑出並收合高度；關閉 2 秒後移除 DOM。</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="arch">4. 架構與運作原理</h2>
+
+<h3>檔案職責</h3>
+<div class="table-wrap">
+<table>
+  <tr><th>檔案</th><th>職責</th></tr>
+  <tr><td><code>src/components/popoutMessageBox/popoutMessageCore.ts</code></td><td><strong>核心（不依賴 Vue）</strong>：注入樣式、建立容器與訊息 DOM、進出場動畫、計時與暫停、上限、狀態與訂閱、<code>notify</code> 單例</td></tr>
+  <tr><td><code>src/components/popoutMessageBox/popoutMessageService.ts</code></td><td>Vue 轉接層：訂閱核心、同步成 <code>status</code> 的 ref，定義 <code>PopoutMessageMethods</code></td></tr>
+  <tr><td><code>src/components/popoutMessageBox/PopoutMessagePlugin.ts</code></td><td>Vue plugin：<code>provide</code> 服務、<code>usePopoutMessage()</code></td></tr>
+  <tr><td><code>src/components/popoutMessageBox/popoutMessageBox.css</code></td><td>樣式（巢狀 CSS，經 postcss-nesting 轉換；核心以 <code>?inline</code> 載入成字串）</td></tr>
+  <tr><td><code>packages/index.ts</code> / <code>packages/core.ts</code></td><td>Vue 入口 / core 入口</td></tr>
+  <tr><td><code>src/App.vue</code>、<code>src/main.ts</code>、<code>index.html</code></td><td>Vue demo 頁面</td></tr>
+  <tr><td><code>tests/unit/</code>、<code>tests/e2e/</code></td><td>Vitest 單元測試、Playwright E2E（含不使用 Vue 的 fixture 頁）</td></tr>
+</table>
+</div>
+
+<h3>呼叫流程</h3>
+<div class="panel">
+<svg class="diagram" viewBox="0 0 860 250" role="img" aria-label="呼叫流程圖：notify 方法建立訊息並通知訂閱者">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path class="arrowhead" d="M0,0 L10,5 L0,10 z"/>
+    </marker>
+  </defs>
+  <rect x="10" y="20" width="180" height="62" rx="8"/>
+  <text x="100" y="46" text-anchor="middle">notify.success(...)</text>
+  <text x="100" y="66" text-anchor="middle" class="small">core 直接呼叫 / Vue 經轉接層</text>
+
+  <rect x="230" y="20" width="180" height="62" rx="8"/>
+  <text x="320" y="46" text-anchor="middle">注入樣式、建立容器</text>
+  <text x="320" y="66" text-anchor="middle" class="small">各只做一次</text>
+
+  <rect x="450" y="20" width="180" height="62" rx="8"/>
+  <text x="540" y="46" text-anchor="middle">建立訊息 DOM</text>
+  <text x="540" y="66" text-anchor="middle" class="small">prepend、進場動畫、開始計時</text>
+
+  <rect x="670" y="20" width="180" height="62" rx="8"/>
+  <text x="760" y="46" text-anchor="middle">加入 openItems</text>
+  <text x="760" y="66" text-anchor="middle" class="small">最舊的在前</text>
+
+  <rect x="670" y="160" width="180" height="62" rx="8"/>
+  <text x="760" y="186" text-anchor="middle">超過上限？</text>
+  <text x="760" y="206" text-anchor="middle" class="small">從最舊的開始 close()</text>
+
+  <rect x="450" y="160" width="180" height="62" rx="8"/>
+  <text x="540" y="186" text-anchor="middle">emitChange()</text>
+  <text x="540" y="206" text-anchor="middle" class="small">{ count, maxItemNumber }</text>
+
+  <rect x="230" y="160" width="180" height="62" rx="8"/>
+  <text x="320" y="186" text-anchor="middle">Vue 轉接層</text>
+  <text x="320" y="206" text-anchor="middle" class="small">更新 status 的 ref</text>
+
+  <rect x="10" y="160" width="180" height="62" rx="8"/>
+  <text x="100" y="186" text-anchor="middle">使用者的 subscribe</text>
+  <text x="100" y="206" text-anchor="middle" class="small">例如更新畫面計數</text>
+
+  <line x1="190" y1="51" x2="228" y2="51" marker-end="url(#arr)"/>
+  <line x1="410" y1="51" x2="448" y2="51" marker-end="url(#arr)"/>
+  <line x1="630" y1="51" x2="668" y2="51" marker-end="url(#arr)"/>
+  <line x1="760" y1="82" x2="760" y2="158" marker-end="url(#arr)"/>
+  <line x1="670" y1="191" x2="632" y2="191" marker-end="url(#arr)"/>
+  <line x1="450" y1="191" x2="412" y2="191" marker-end="url(#arr)"/>
+  <path d="M540,222 L540,240 L100,240 L100,224" marker-end="url(#arr)"/>
+</svg>
+</div>
+<p>重點：訊息不在使用者的元件樹裡，而是由核心直接建立在 <code>&lt;body&gt;</code> 下的獨立容器中。Vue 轉接層只是核心的一個訂閱者，因此 Vue 與非 Vue 用法共用同一套邏輯。</p>
+
+<h3>單則訊息的生命週期（核心內的 closure）</h3>
+<ol>
+  <li><strong>建立</strong>：組出 DOM 並 prepend；卡片加上 <code>popout-slide-enter-from / -active</code>，兩個 frame 後換成 <code>-enter-to</code>，<code>transitionend</code> 後移除。</li>
+  <li><strong>100ms 後</strong>：若尚未關閉，把卡片高度固定為實際高度，讓關閉時的高度收合有動畫。</li>
+  <li><strong>計時</strong>：<code>setTimeout(close, lifeTime * 1000)</code>；<code>pause()</code> 清計時並扣掉已過時間、遮罩加 <code>--stop</code>；<code>resume()</code> 以剩餘時間重新計時。</li>
+  <li><strong>關閉 <code>close()</code></strong>（時間到、點擊、或被上限擠出）：以 <code>closing</code> 旗標防止重複執行 → 停止計時 → 移出 <code>openItems</code> → 高度設 0 並播放 <code>popout-slide-leave</code> 動畫 → <code>emitChange()</code>。</li>
+  <li><strong>2 秒後</strong>：移除外層 DOM。</li>
+</ol>
+
+<h3>模組層級狀態</h3>
+<ul>
+  <li><code>openItems</code>（顯示中的訊息）、<code>listeners</code>、<code>maxItemNumber</code> 都在核心模組內，整個頁面只有一份（單例）。</li>
+  <li>訊息與核心之間以 closure 與物件引用對應，不使用 DOM id、自訂事件或 uuid。</li>
+  <li>載入模組時不存取 <code>document</code>，第一次顯示訊息時才建立 <code>&lt;style&gt;</code> 與容器。</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="build">5. 建置 / 開發 / 測試 / 發佈</h2>
+
+<h3>npm scripts</h3>
+<div class="table-wrap">
+<table>
+  <tr><th>指令</th><th>作用</th></tr>
+  <tr><td><code>dev:local</code></td><td>Vue demo 開發伺服器，<code>akira-c-popout-message-box</code> alias 指向 src 原始碼</td></tr>
+  <tr><td><code>dev:built</code></td><td>先 <code>build:lib</code>，再啟動 Vue demo，alias 指向 <code>lib/popout-message-box.js</code>（模擬正式使用）</td></tr>
+  <tr><td><code>build:lib</code></td><td>依序以 <code>--mode es</code>、<code>umd-core</code>、<code>umd-vue</code> 建置三次（UMD 只能有單一入口）</td></tr>
+  <tr><td><code>build:demo</code></td><td>以 <code>vite-plugin-singlefile</code> 把 Vue demo 打成單一 HTML 到 <code>dist/</code>（GitHub Pages 用）</td></tr>
+  <tr><td><code>test:unit</code> / <code>test:unit:watch</code></td><td>Vitest 單元測試（jsdom）</td></tr>
+  <tr><td><code>test:e2e</code></td><td>Playwright E2E（Chromium，自動啟動 demo 伺服器）</td></tr>
+  <tr><td><code>test</code></td><td>先單元測試，通過後再跑 E2E</td></tr>
+</table>
+</div>
+<p class="note"><code>dev:local</code> / <code>dev:built</code> 使用 Windows 的 <code>set VAR=x&amp;&amp;</code> 語法（見問題 2）。</p>
+
+<h3>建置產物（lib/）</h3>
+<div class="table-wrap">
+<table>
+  <tr><th>檔案</th><th>建置 mode</th><th>說明</th><th>大小</th></tr>
+  <tr><td><code>popout-message-box-core.js</code></td><td>es</td><td>core ESM（含核心與 CSS 字串）</td><td>5.7 KB</td></tr>
+  <tr><td><code>popout-message-box.js</code></td><td>es</td><td>Vue ESM，<code>import</code> 上面的 core 檔（共用狀態），<code>vue</code> 為 external</td><td>0.9 KB</td></tr>
+  <tr><td><code>popout-message-box-core.umd.cjs</code></td><td>umd-core</td><td>core UMD，全域 <code>PopoutMessageBox</code>，不含 Vue</td><td>5.4 KB</td></tr>
+  <tr><td><code>popout-message-box.umd.cjs</code></td><td>umd-vue</td><td>Vue UMD，全域 <code>PopoutMessageBoxVue</code>，內含一份核心</td><td>6.1 KB</td></tr>
+  <tr><td><code>popout-message-box.css</code></td><td>es</td><td>與注入內容相同的 CSS，保留給舊版的 import 路徑</td><td>2.8 KB</td></tr>
+  <tr><td><code>packages/*.d.ts</code>、<code>src/**/*.d.ts</code></td><td>es</td><td>vite-plugin-dts 依 <code>tsconfig.lib.json</code> 產生的型別</td><td></td></tr>
+</table>
+</div>
+
+<h3>package.json exports</h3>
+<pre><code>"."      → types: lib/packages/index.d.ts · import: lib/popout-message-box.js      · require: lib/popout-message-box.umd.cjs
+"./core" → types: lib/packages/core.d.ts  · import: lib/popout-message-box-core.js · require: lib/popout-message-box-core.umd.cjs
+"./lib/popout-message-box.css"
+peerDependencies: vue ^3.2.41（peerDependenciesMeta: optional）</code></pre>
+
+<h3>CSS 的處理方式</h3>
+<p>核心以 <code>import cssText from './popoutMessageBox.css?inline'</code> 取得經 postcss 編譯、壓縮後的字串，第一次顯示訊息時注入。<code>vite.lib.config.js</code> 內的小 plugin <code>emit-css-file</code> 攔截同一份字串另外輸出成 <code>lib/popout-message-box.css</code>，所以兩者內容一致、建置一次即正確（取代了舊的 <code>inject-css-content</code>）。</p>
+
+<h3>測試</h3>
+<div class="table-wrap">
+<table>
+  <tr><th>檔案</th><th>內容</th><th>目標</th></tr>
+  <tr><td><code>tests/unit/service.spec.js</code></td><td>訊息方法、class、排序、計數、上限、樣式注入</td><td rowspan="3">4 種：Vue src、Vue lib、core src、core lib</td></tr>
+  <tr><td><code>tests/unit/component.spec.js</code></td><td>自動關閉、DOM 移除、懸停暫停、點擊關閉</td></tr>
+  <tr><td><code>tests/unit/known-issues.spec.js</code></td><td>已修正問題 A、F、I、J 的回歸測試</td></tr>
+  <tr><td><code>tests/unit/core.spec.js</code></td><td><code>getCount</code>、<code>subscribe</code>、不引用 Vue、Vue 與 core 入口共用狀態</td><td>core src、core lib</td></tr>
+  <tr><td><code>tests/unit/plugin.spec.js</code></td><td>匯出、plugin 安裝、<code>status</code> 同步、元件外使用 <code>notify</code></td><td>Vue src、Vue lib</td></tr>
+  <tr><td><code>tests/unit/lib-build.spec.js</code></td><td>產物齊全、CSS 一致、vue external、兩個 UMD 的全域名稱</td><td>lib</td></tr>
+  <tr><td><code>tests/e2e/demo.spec.js</code></td><td>Vue demo 頁的實際操作（14 項）</td><td>Chromium</td></tr>
+  <tr><td><code>tests/e2e/core.spec.js</code></td><td>不使用 Vue 的 fixture 頁（6 項）</td><td>Chromium</td></tr>
+</table>
+</div>
+<p class="note">lib 相關的單元測試讀的是 <code>lib/</code> 的現有內容，改動原始碼後要先 <code>build:lib</code> 再跑測試。E2E 的 Vue demo 以 src 原始碼啟動，沒有另外測 <code>dev:built</code>。</p>
+
+<h3>發佈到 npm</h3>
+<ol>
+  <li>更新 <code>package.json</code> 版本與兩份 README 的版本號、變更說明</li>
+  <li><code>pnpm run build:lib</code>（<code>lib/</code> 有進版控）</li>
+  <li><code>pnpm test</code></li>
+  <li>commit（含 <code>lib/</code>）</li>
+  <li><code>npm login</code> → <code>npm publish</code>（<code>files</code> 只發佈 <code>lib/</code>）</li>
+</ol>
+
+<!-- ============================================================ -->
+<h2 id="issues">6. 已知問題與待辦</h2>
+<p>
+  <span class="tag high">高</span> 會造成錯誤行為
+  <span class="tag mid">中</span> 影響使用者整合或發佈
+  <span class="tag low">低</span> 清理 / 改善
+</p>
+
+<div class="issue mid">
+  <div class="title"><span class="tag mid">中</span> 1. Vue 版本範圍與型別不一致</div>
+  <div class="where">package.json — <code>peerDependencies.vue</code>；<code>lib/src/.../popoutMessageService.d.ts</code></div>
+  <p>peer 範圍是 <code>^3.2.41</code>，但 Vue 入口的型別使用 Vue 3.5 才有的 <code>Ref&lt;number, number&gt;</code>。執行時沒有影響；使用 Vue 3.5 以前、且開啟型別檢查（<code>skipLibCheck: false</code>）的 TS 專案可能報錯。可把範圍提高到 <code>^3.5.0</code>，或維持現狀並在 README 說明。core 入口不受影響。</p>
+</div>
+
+<div class="issue mid">
+  <div class="title"><span class="tag mid">中</span> 2. 發佈前的 git 整理</div>
+  <div class="where">工作區</div>
+  <p>見第 1 節：大量變更未 commit；<code>popoutMessageBox.vue</code> 刪除尚未 stage；<code>.github/skills/...</code> 為「已 staged 但已刪除」；<code>doc/</code>、<code>.claude/</code> 是否納入版控待決定。另外 0.0.10 是從未 commit 的狀態發佈的，git 歷史中沒有對應的 commit。</p>
+</div>
+
+<div class="issue">
+  <div class="title"><span class="tag low">低</span> 3. 卡片會繼承頁面的 line-height 等文字樣式</div>
+  <div class="where">popoutMessageBox.css</div>
+  <p>class 改名後已不會被同名樣式影響，但元件沒有明確設定 <code>line-height</code>、<code>font-family</code> 等可繼承屬性，會沿用使用者頁面的值（本頁示範的卡片就比 demo 頁高）。可在 <code>#popout-message-box-list</code> 上明確設定。</p>
+</div>
+
+<div class="issue">
+  <div class="title"><span class="tag low">低</span> 4. dev 指令不跨平台</div>
+  <div class="where">package.json — <code>dev:local</code>、<code>dev:built</code></div>
+  <p><code>set VAR=x&amp;&amp;</code> 只在 Windows cmd 有效，macOS / Linux 需改用 <code>cross-env</code>。（測試與 <code>build:lib</code> 已改用 <code>--mode</code>，不受影響。）</p>
+</div>
+
+<div class="issue">
+  <div class="title"><span class="tag low">低</span> 5. 時間常數與 CSS 重複</div>
+  <div class="where">popoutMessageCore.ts — <code>REMOVE_DELAY = 2000</code>；popoutMessageBox.css — <code>transition: all 0.5s</code></div>
+  <p>核心假設離場動畫在 2 秒內結束。若使用者以 CSS 把動畫改得比 2 秒長，DOM 會在動畫結束前被移除。</p>
+</div>
+
+<div class="issue">
+  <div class="title"><span class="tag low">低</span> 6. <code>status</code> 的 ref 可被寫入但不會生效</div>
+  <div class="where">popoutMessageService.ts</div>
+  <p><code>status.count</code> / <code>status.maxItemNumber</code> 是一般 ref，寫入後只會改到 ref 本身，不會影響核心（下一次狀態變化時會被覆蓋）。README 已註明「唯讀用途」，可考慮改成 <code>readonly()</code>，但會改變型別。</p>
+</div>
+
+<div class="issue">
+  <div class="title"><span class="tag low">低</span> 7. UMD 副檔名 <code>.cjs</code> 在部分 CDN 無法用 <code>&lt;script&gt;</code> 載入</div>
+  <div class="where">lib/*.umd.cjs</div>
+  <p>unpkg 回傳 <code>text/javascript</code> 可正常使用（README 範例使用 unpkg）；jsDelivr 回傳 <code>application/node</code> 並帶 <code>nosniff</code>，瀏覽器會拒絕執行。若要支援 jsDelivr，需另外輸出 <code>.js</code> 副檔名的 UMD（但 <code>"type": "module"</code> 下 <code>.js</code> 會被 Node 當成 ESM，<code>require</code> 仍需 <code>.cjs</code>）。</p>
+</div>
+
+<div class="issue">
+  <div class="title"><span class="tag low">低</span> 8. vite-plugin-dts 已不建議使用</div>
+  <div class="where">vite.lib.config.js</div>
+  <p>其 README 建議改用 <code>unplugin-dts</code>；目前版本只是包裝 unplugin-dts，功能正常。</p>
+</div>
+
+<h3>後續可改善的方向（非問題）</h3>
+<ul>
+  <li>安裝 / 初始化時帶設定：位置（如 <code>bottom-right</code>）、預設 <code>lifeTime</code>、上限。</li>
+  <li><code>lifeTime: 0</code> 代表不自動關閉；方法回傳控制物件（<code>close()</code>、<code>update()</code>）與 <code>notify.clear()</code>。</li>
+  <li><code>notify.promise(p, { loading, success, error })</code>、相同訊息合併、動作按鈕。</li>
+  <li>無障礙：<code>aria-live</code>、error 使用 <code>role="alert"</code>、Esc 關閉、<code>prefers-reduced-motion</code>。</li>
+  <li>主題：以 CSS 變數自訂顏色（目前 <code>info</code> 為固定色）、深色模式。</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="resolved">7. 已解決的問題</h2>
+<p>先前版本（0.0.10 時）記錄的問題，皆已在 0.1.0 修正，並有測試或實測驗證。</p>
+<div class="table-wrap">
+<table class="resolved">
+  <tr><th>編號</th><th>問題</th><th>修正方式</th></tr>
+  <tr><td><span class="tag ok">A</span></td><td>點擊關閉後滑鼠移開，<code>status.count</code> 被重複扣減</td><td><code>closing</code> 旗標，關閉中不再重新計時；回歸測試 known-issues [A]</td></tr>
+  <tr><td><span class="tag ok">B</span></td><td>CSS 注入讀的是上一次建置的檔案，需建置兩次</td><td>改用 <code>?inline</code> 取得本次編譯的 CSS；CSS 檔由同一份字串輸出</td></tr>
+  <tr><td><span class="tag ok">C</span></td><td>README 與實際不符（另外 import CSS、依賴 Bootstrap 5、<code>npm run dev</code>）</td><td>兩份 README 重寫，含 0.1.0 變更說明與自訂樣式</td></tr>
+  <tr><td><span class="tag ok">D</span></td><td>沒有輸出 TypeScript 型別</td><td>入口改 TS、vite-plugin-dts；以打包後的 tarball 在 TS 專案中驗證</td></tr>
+  <tr><td><span class="tag ok">E</span></td><td><code>vue</code> 在 <code>dependencies</code>；<code>uuid</code> 已打包仍列為依賴</td><td><code>vue</code> 改為選用 peer；移除 <code>uuid</code> 與 <code>@types/uuid</code>，無執行期依賴</td></tr>
+  <tr><td><span class="tag ok">F</span></td><td>殘留 <code>console.log</code></td><td>移除；回歸測試 known-issues [F]</td></tr>
+  <tr><td><span class="tag ok">G</span></td><td>UMD 全域名稱拼錯 <code>PopoutMwessageBox</code></td><td>改為 <code>PopoutMessageBoxVue</code>（core 為 <code>PopoutMessageBox</code>）</td></tr>
+  <tr><td><span class="tag ok">H</span></td><td><code>appendChild</code> 後又 <code>prepend</code></td><td>移除多餘的 <code>appendChild</code>（新核心只 prepend）</td></tr>
+  <tr><td><span class="tag ok">I</span></td><td><code>setMaxItemNumber</code> 無驗證、調低不立即生效</td><td>非大於等於 1 的整數拋 <code>RangeError</code>；設定後立即關閉多餘訊息</td></tr>
+  <tr><td><span class="tag ok">J</span></td><td>同一 tick 內被擠出的訊息不會關閉</td><td>不再依賴延後掛上的事件監聽，直接呼叫訊息的 <code>close()</code></td></tr>
+  <tr><td><span class="tag ok">K</span></td><td>Vue 元件從未 unmount</td><td>訊息不再是 Vue 元件，由核心建立與移除 DOM</td></tr>
+  <tr><td><span class="tag ok">L</span></td><td>載入即存取 <code>document</code>（SSR 無法 import）、只記錄單一 app</td><td>樣式與容器延後到第一次顯示才建立；plugin 不再保存 app。已在 Node 中實測可 import</td></tr>
+  <tr><td><span class="tag ok">N</span></td><td>元件 README、App.vue 展示片段過時</td><td>元件 README 改為檔案職責說明；App.vue 片段同步並加 <code>v-pre</code></td></tr>
+  <tr><td><span class="tag ok">—</span></td><td>class 名稱太通用（<code>.card</code> 等），被頁面樣式影響</td><td>改為 BEM + <code>popout-</code> 前綴；README 附新舊對照表（破壞性變更）</td></tr>
+  <tr><td><span class="tag ok">—</span></td><td>只能在 Vue 中使用</td><td>新增 <code>/core</code> 入口；Vue 入口改為核心的轉接層</td></tr>
+</table>
+</div>
+
+<p class="note" style="margin-top:40px">本文件依 2026-10-30 的工作區原始碼整理（package.json 0.1.0，最新 commit 1dfadf2）。程式碼變更後內容可能過時。</p>
+</main>
+
+<!-- core 示範：不需要 Vue -->
+<script src="../lib/popout-message-box-core.umd.cjs"></script>
+<script>
+(function () {
+  var errEl = document.getElementById('core-error')
+  function showError(msg) {
+    errEl.hidden = false
+    errEl.textContent = msg
+  }
+  var lib = window.PopoutMessageBox
+  if (!lib) {
+    showError('無法載入 ../lib/popout-message-box-core.umd.cjs，請先執行 build:lib，並確認本檔位於 doc/ 目錄。')
+    document.getElementById('core-demo').hidden = true
+    return
+  }
+  var notify = lib.notify
+  var msg = document.getElementById('core-msg')
+  document.querySelectorAll('#core-demo [data-type]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      notify[btn.dataset.type](msg.value, 'core · ' + btn.dataset.type)
+    })
+  })
+  document.getElementById('core-max').addEventListener('change', function (e) {
+    errEl.hidden = true
+    try {
+      notify.setMaxItemNumber(Number(e.target.value))
+    } catch (err) {
+      showError(err.name + '：' + err.message)
+    }
+  })
+  notify.subscribe(function (state) {
+    document.getElementById('core-count').textContent = state.count
+    document.getElementById('core-max-view').textContent = state.maxItemNumber
+  })
+})()
+</script>
+
+<!-- Vue 示範：Vue 由 unpkg 載入 -->
+<script src="https://unpkg.com/vue@3.5.13/dist/vue.global.prod.js"></script>
+<script src="../lib/popout-message-box.umd.cjs"></script>
+<script>
+(function () {
+  var errEl = document.getElementById('vue-error')
+  function fail(msg) {
+    errEl.hidden = false
+    errEl.textContent = msg
+    document.getElementById('vue-demo').hidden = true
+  }
+  if (typeof Vue === 'undefined') {
+    fail('無法載入 Vue（unpkg），請確認網路連線。')
+    return
+  }
+  var lib = window.PopoutMessageBoxVue
+  if (!lib) {
+    fail('無法載入 ../lib/popout-message-box.umd.cjs，請先執行 build:lib，並確認本檔位於 doc/ 目錄。')
+    return
+  }
+  try {
+    Vue.createApp({
+      setup: function () {
+        var notify = lib.usePopoutMessage()
+        var max = Vue.ref(notify.getMaxItemNumber())
+        return {
+          notify: notify,
+          msg: Vue.ref('Hello Vue'),
+          max: max,
+          setMax: function () {
+            errEl.hidden = true
+            try {
+              notify.setMaxItemNumber(max.value)
+            } catch (err) {
+              errEl.hidden = false
+              errEl.textContent = err.name + '：' + err.message
+            }
+          }
+        }
+      }
+    }).use(lib.default).mount('#vue-demo')
+  } catch (e) {
+    fail('示範初始化失敗：' + e.message)
+  }
+})()
+</script>
+</body>
+</html>
